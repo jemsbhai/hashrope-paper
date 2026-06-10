@@ -1,0 +1,48 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Experiment outputs — large/regenerable artifacts are not versioned.
+# We DO version: each EXP's config.yaml, environment.json, seed.json, and
+# the small results/ summaries + figures. We do NOT version bulk logs,
+# checkpoints, or large intermediate data.
+experiments/**/checkpoints/
+experiments/**/logs/*.raw
+experiments/**/*.tmp
+
+# Large raw data (tracked via checksums + DATA_README instead)
+data/raw/**
+!data/raw/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
+
+# Model / tokenizer caches
+*.bin
+*.safetensors
+.cache/
+hf_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# LaTeX build
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.synctex.gz
+paper/*.fdb_latexmk
+paper/*.fls
+
+# Secrets
+.env
