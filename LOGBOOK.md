@@ -383,3 +383,123 @@ gpt2 4 MB rayon per-seed {6.90,6.46,6.51}, mp {7.69,7.64,7.46}). chunk-only per-
 S1: SUPPORTED (pilot) -> **SUPPORTED (confirmatory)** for gpt2 >=1 MB (direction + mean+/-std
 magnitudes + significant paired MP>rayon). t5 1 MB MP-vs-rayon recorded as a comparable/rayon-
 ahead regime (honest negative for the MP-crossover at that single cell).
+
+---
+
+## EXP-002: Flatten — in-order materialization vs midpoint re-split (claim S4)
+
+**Date:** 2026-06-11 (planned)
+**Researcher:** Muntaser Syed
+**Type:** computational
+**Status:** planned
+
+### Hypothesis
+The prior draft's flatten "tax" (claim S4, `4_serialization_tax.csv`: Hybrid ≈ 945 ms,
+~constant in edit count K=1..100, vs Native growing 0.9→41 ms) is an IMPLEMENTATION
+ARTIFACT, not an inherent O(N) serialization cost. The old `flatten_context`
+(`old/hashrope1_exmain.py` L579) materializes a rope by recursively splitting at midpoints
+down to ≤4 KB pieces. Where a midpoint lands inside a leaf (the generic, non-power-of-two
+case), `rope_split` reconstructs `Leaf` objects, and every `Leaf.__init__` RECOMPUTES its
+polynomial hash from scratch — re-hashing ~Θ(N) bytes through pure-Python per-byte modular
+reduction (`mersenne_mod`). The library's in-order materializer `rope_to_bytes`
+(`packages/python/hashrope/rope.py` L576 → `_collect_bytes`) reads each stored `Leaf.data`
+once and joins — 0 splits, 0 leaf re-allocations, 0 hash recomputation. Expected ~2–3 orders
+of magnitude faster, alignment-independent. S4 flips from "inherent tax / damage control" to
+"the structure flattens in linear time with no recomputation."
+
+### Background / recon + sandbox validation (2026-06-11)
+- `rope_to_bytes`/`_collect_bytes` is ALREADY the correct O(N) in-order flatten; NO library
+  change is required — the fix is to call it instead of re-splitting.
+- `rope_from_bytes` returns a SINGLE `Leaf` (no auto-chunking), so the realistic rope must be
+  built like the prior `HashRopeAdapter` (`old/hashrope1_exmain.py` L40): chunk into 4 KB
+  leaves and merge BOTTOM-UP pairwise.
+- ALIGNMENT is decisive: on a power-of-two leaf count every byte-midpoint hits a leaf boundary
+  (`_split` returns existing children → 0 re-hash → no tax). Non-power-of-two counts misalign
+  → the tax. The sweep therefore uses realistic DECIMAL sizes (e.g. N = 2,000,000 → 489 leaves),
+  NOT binary 2 MiB (= 2^21 B = 512 leaves, which would hide the tax).
+- Faithful sandbox reproduction (2 MB "C", bottom-up 4 KB build): broken 783 ms vs fixed
+  1.25 ms = 627×; broken counts 511 splits / 1022 `Leaf` allocs / 2,092,364 `mersenne_mod`
+  calls; cProfile attributes ~99% to `PolynomialHash.hash`. Confirms the mechanism is
+  redundant hashing (NOT allocation churn or a clean N log N).
+
+### Independent variables
+- Flatten implementation: {broken = faithful `flatten_context` port (CONTROL); fixed =
+  `rope_to_bytes`}
+- Context size N (log sweep, DECIMAL / non-power-of-two leaf counts): {64,000; 256,000;
+  1,000,000; 2,000,000; 4,000,000; 8,000,000; 16,000,000} bytes; **N = 2,000,000 is the
+  reference point** (matches the prior 945 ms anchor)
+- Leaf size fixed at 4096 B (leaf-size sensitivity is EXP-010)
+
+### Dependent variables / metrics
+- **Correctness (HARD gate, boolean):** fixed == original bytes AND == broken output,
+  byte-identical, at every (size, seed)
+- **Operation-count guard (instrumented via monkeypatch):** per flatten, # `rope_split` calls,
+  # `Leaf` re-allocations, # `PolynomialHash.hash` recomputations. Expect fixed = 0/0/0;
+  broken = Θ(#leaves) leaf re-allocs re-hashing ~Θ(N) bytes
+- **Wall-clock latency (ms):** warm, interleaved broken/fixed, mean ± std across runs; CV
+- **Speedup** = broken/fixed (mean ± std), per size
+- **Empirical scaling exponent** (log-log slope of latency vs N) per arm — measured, not asserted
+
+### Control conditions
+- Same rope object flattened by both arms (paired)
+- Real corpus (prose + code via `prep_corpus.py`); NOT `"A"*N`/`"C"*N` (degenerate). The re-hash
+  mechanism is content-independent; real content guards against any content artifact.
+- Identical bottom-up fat-leaf build for both arms
+- Warm-up discarded; interleaved order; cool-downs; AC power; idle check before runs (per the
+  TOML local-measurement discipline); fixed git SHA recorded
+- Baseline = the broken `flatten_context` algorithm (reproduces the prior 945 ms-class cost)
+
+### Protocol (TDD, red-first)
+1. `src/flatten.py`: `make_hash`, `build_fat_leaf_rope` (bottom-up), `flatten_broken` (port,
+   CONTROL), `flatten_fixed` (= `rope_to_bytes`, FIX).
+2. `tests/test_flatten.py` (red-first, mirrors EXP-001): CONTROL test
+   `test_broken_flatten_reproduces_rehash_tax` PASSES (tax real: splits/leaf/hash > 0); FIX
+   tests (byte-identity, fixed==broken, zero-rehash guard) RED until `flatten_fixed` wired,
+   then GREEN.
+3. `scripts/exp002_bench.py`: build per size; time both arms (warm, interleaved, ≥3 corpus
+   seeds × ≥3 independent process invocations); write `experiments/exp_002_flatten/results/`
+   JSON (latest + timestamped) with env + corpus SHA-256 + git SHA; CV check.
+4. `scripts/exp002_figure.py`: log-log latency vs N (both arms, fitted slopes) + speedup;
+   replaces the prior serialization-tax figure.
+5. Record Results/Observations/Interpretation here + findings.md; evaluate the promotion
+   criterion verbatim; commit.
+
+### Environment
+- **Hardware:** laptop, Intel Core i9-14900HX (24c/32t hybrid P+E), 64 GB RAM, RTX 4090 Laptop
+  (idle; CPU-only experiment), AC power
+- **Software:** [fill at run: Windows 11, Python 3.12.2, hashrope version]
+- **Git commit:** [fill: clean SHA before the benchmark run]
+- **Seeds:** corpus realization seeds {42, 43, 44} (≥3)
+
+### Promotion criterion (verbatim, written before any data)
+S4 → SUPPORTED iff, across ≥3 corpus seeds × ≥3 independent invocations:
+(i)  [HARD] byte-identity holds at every (size, seed): fixed == original == broken,
+     0 mismatches — else the experiment FAILS outright.
+(ii) operation-count guard: `flatten_fixed` performs 0 `rope_split`, 0 `Leaf` re-allocations,
+     and 0 hash recomputations; `flatten_broken` performs Θ(#leaves) `Leaf` re-allocations
+     re-hashing ~Θ(N) bytes — i.e., the fix eliminates ALL redundant hashing.
+(iii) wall-clock: at the N = 2,000,000 reference, fixed mean ≤ 5 ms AND speedup (broken/fixed)
+     ≥ 100× (mean ± std, n ≥ 9); speedup ≥ 100× at every size ≥ 256 KB (no monotonicity
+     assumed — both arms scale ~linearly in N).
+(iv) scaling reported empirically (log-log slope per arm); fixed consistent with O(N)
+     (slope ≈ [0.85, 1.2]); NO pre-asserted N log N — the mechanism is measured redundant hashing.
+(v)  all numbers reported as mean ± std across runs (never within-run CI).
+Failure of (ii)/(iii) → S4 stays REFRAMED and we investigate (no retrofit).
+Honesty note: the multiplier is Python-amplified (pure-Python per-byte hashing); the conceptual
+fix (read stored bytes, don't re-hash) holds in Rust too, where the absolute win is smaller.
+Rust confirmation optional/deferred.
+
+### Results
+[filled after run]
+
+### Observations
+[filled after run]
+
+### Interpretation
+[filled after run]
+
+### Artifacts
+- Implementation/control: src/flatten.py
+- Tests (gate + guard): tests/test_flatten.py
+- Bench: scripts/exp002_bench.py ; results experiments/exp_002_flatten/results/
+- Figure: scripts/exp002_figure.py ; figures/exp002_flatten_latency.{png,pdf}
