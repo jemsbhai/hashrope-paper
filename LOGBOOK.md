@@ -140,5 +140,100 @@ not deflate the measured ingestion speedup.
 ### Artifacts
 - Implementation: src/tokenizer_aligned.py
 - Test (proof obligation): tests/test_tokenizer_aligned.py ; root conftest.py
-- Results (timing, pending): experiments/exp_001_tokenizer_aligned/results/
-- Figures (pending): experiments/exp_001_tokenizer_aligned/figures/
+- Results (timing): experiments/exp_001_tokenizer_aligned/results/ (see Addendum B)
+- Figures: experiments/exp_001_tokenizer_aligned/figures/ (see Addendum B)
+
+---
+
+## EXP-001 — Addendum B (Milestone B): ingestion-speedup timing results
+
+**Date:** 2026-06-11 ~05:00 (America/New_York)
+**Researcher:** Muntaser Syed
+**Status update:** in-progress → **S1 corrected form SUPPORTED at PILOT grade** (single
+corpus realization; multi-seed confirmatory run still required before paper-final).
+**Phase (per protocol §6a):** PILOT — point estimates with 95% CIs. NOT yet confirmatory.
+
+Fills Protocol steps 3–4 (serial whole-string vs parallel per-leaf ingestion latency over a length
+sweep). Numbers pulled from the logged JSON result files (bootstrap CIs from the harness), not from
+console summaries. Append-only: nothing above is edited.
+
+### Environment (filled from env block in result JSONs)
+- **Hardware:** Intel64 Family 6 **Model 183** (Raptor Lake), `cpu_count=32` **logical** threads.
+  NOTE: Intel **hybrid (P+E)** mobile part, NOT "16 physical + SMT" (an earlier verbal claim by
+  Claude — corrected). Exact P/E split not in env block; stated cautiously. 64 GB RAM; RTX 4090
+  present but **idle** (tokenization is CPU-only; `USE_TORCH=0`).
+- **Software:** Windows-11-10.0.26200-SP0; Python 3.12.2; transformers 5.1.0; tokenizers 0.22.2.
+- **Git commit:** [PENDING — run `git rev-parse HEAD`]. Flagged for fill before paper-final.
+- **Seeds/reps:** corpus shuffle seed = 42 (fixed, single realization); reps = 7/cell; warmup
+  discarded; bootstrap 95% CI. **No multi-seed yet** (see Limitations).
+- **Data:** non-tiled (15 Gutenberg books + 40 Python-stdlib files, shuffled at 8 KB); provenance in
+  data/DATA_README.md. ALL cells `corpus_tiled=False`.
+
+### Results A — chunking-only (rayon@1, NO parallelism); speedup vs serial whole-string
+Grows monotonically with length (whole-string superlinear penalty grows with N). Tight CIs.
+
+| length | gpt2 | t5-small |
+|---|---|---|
+| 64 KB  | 1.14× [1.10,1.15] | 1.14× [1.14,1.15] |
+| 256 KB | 1.35× [1.35,1.36] | 1.27× [1.27,1.30] |
+| 1 MB   | 1.42× [1.38,1.43] | 1.31× [1.29,1.33] |
+| 4 MB   | 1.52× [1.51,1.52] | 1.38× [1.37,1.40] |
+
+### Results B — rayon parallel scaling (speedup vs serial)
+Peaks at **16 threads**; 24/32 *regress* (hybrid CPU: E-cores / oversubscription degrade CPU-bound
+BPE). gpt2 @ 4 MB: t1 1.52 → t2 2.60 → t4 4.37 → t8 6.22 → **t16 6.49 [6.4,6.7]** → t24 6.16 →
+t32 5.08. Peak per cell:
+
+| length | gpt2 peak | t5-small peak |
+|---|---|---|
+| 64 KB  | 4.21× [4.1,4.5] @16 | 3.63× [3.5,3.7] @8  |
+| 256 KB | 6.15× [6.1,6.3] @16 | 5.35× [5.3,5.7] @8  |
+| 1 MB   | 6.50× [6.3,6.6] @16 | 6.87× [6.6,7.0] @16 |
+| 4 MB   | 6.49× [6.4,6.7] @16 | 6.33× [6.0,6.6] @16 |
+
+Efficiency tracks granularity: 64 KB (16 leaves) parallelizes poorly; long contexts use cores well.
+
+### Results C — rayon vs multiprocessing (lengths 256K/1M/4M; MP archive 045750Z)
+**Clean CI-backed crossover:** rayon wins SMALL (MP pays process/IPC + pickle-back with few leaves);
+MP wins LARGE (parallelizes the ~1M-object Python token materialization that bottlenecks rayon's
+single main-process gather).
+
+| cell | rayon peak | MP (clean, ≤16 workers) | winner (CI-backed) |
+|---|---|---|---|
+| gpt2 256 KB | **6.15× [6.1,6.3]** @16 | mp8 4.36× [4.1,4.4]; mp16 5.42× [3.9,6.0] | **rayon** |
+| gpt2 1 MB   | 6.50× [6.3,6.6] @16 | **mp16 7.85× [7.5,8.1]** | **MP** (non-overlap) |
+| gpt2 4 MB   | 6.49× [6.4,6.7] @16 | mp8 8.02× [8.0,8.2]; **mp16 10.43× [10.3,10.5]** | **MP** (decisive) |
+| t5 256 KB   | **5.35× [5.3,5.7]** @8 | mp8 4.67× [4.6,4.7] | **rayon** |
+| t5 1 MB     | 6.87× [6.6,7.0] @16 | mp16 6.89× [6.6,7.0] | **tie** (overlap) |
+| t5 4 MB     | 6.33× [6.0,6.6] @16 | mp16 6.76× [6.6,6.8] | MP (marginal) |
+
+### Observations (incl. corrections to prior verbal claims by Claude)
+1. **Cherry-pick caught + corrected (§6c).** The "10.99×" headline Claude repeated is the **mp32**
+   max, CI **[5.5,11.5]** — high-variance, NOT defensible. Clean number: **mp16 10.43× [10.3,10.5]**.
+   The figure script's `best_speedup` reports the max, which masked this.
+2. **mp32 oversubscribed** (>physical cores on a 24-core hybrid): high variance, sometimes
+   catastrophic (**gpt2 256 KB mp32 = 0.77×**). **Excluded from all claims;** backfill drops it.
+3. **Both backends saturate by 16.** rayon t24/t32 regress; MP >16 degrades. Colab NOT needed for
+   CPU cores; reserved for GPU stage (S3).
+4. **De-tiling cut chunk_x DOWNWARD** (1.6–1.9× tiled → 1.1–1.5× non-tiled). Tiled overstated it.
+
+### Interpretation
+- **S1 corrected form SUPPORTED (pilot).** Honest decomposition: ~1.1–1.5× free chunking + parallel
+  to ~6.5× (rayon) / ~10.4× (MP, large contexts) at 16-way, on a provably identical token stream
+  (Milestone A). Replaces retracted 4.12×. MP>rayon crossover is a genuine non-obvious result.
+- **MP>rayon mechanism (hypothesis, unproven):** rayon parallelizes Rust tokenization but materializes
+  Python token lists serially in the main process (GIL); for ~1M tokens that gather dominates. MP
+  parallelizes materialization across processes, outweighing pickle-back IPC for large contexts.
+  CONFIRM via a profile separating tokenize-time vs Python-materialize-time (deferred).
+- **Required before paper-final (confirmatory, §6a/§6b):** (a) **multi-seed** — only ONE corpus
+  realization (seed=42); need ≥3 shuffle seeds (this is the pilot→confirmatory gap; S1 stays PILOT
+  until done); (b) record producing git SHA; (c) profile the MP>rayon mechanism; (d) a third
+  tokenizer family for timing (identity already verified for more families in Milestone A).
+- **Claim movement:** S1 IN-PROGRESS → **SUPPORTED (pilot)**; → SUPPORTED (confirmatory) after (a).
+
+### Artifacts (canonical files this addendum is computed from)
+- rayon@1 baseline (non-tiled): results/ingestion_rayon1_20260611T043517Z.json
+- rayon@{2,4,8,16,24,32}: results/ingestion_rayon{N}_latest.json (non-tiled sweep, ~04:36–04:41Z)
+- multiprocessing {2..32}: results/ingestion_rayon1_20260611T045750Z.json
+- Figures: figures/exp001_speedup_vs_cores.{png,pdf}, figures/exp001_rayon_vs_mp.{png,pdf}
+- Speedup CI derivation: serial_median / parallel_ci95 (serial CI <1% wide)
