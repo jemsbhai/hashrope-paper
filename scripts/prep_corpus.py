@@ -31,7 +31,11 @@ _START = re.compile(r"\*\*\*\s*START OF TH(E|IS) PROJECT GUTENBERG.*?\*\*\*", re
 _END = re.compile(r"\*\*\*\s*END OF TH(E|IS) PROJECT GUTENBERG", re.S)
 
 
-def fetch_book(bid):
+def fetch_book(bid, cache_dir):
+    # Cache raw books so multi-seed runs fetch once and only reshuffle.
+    cache_path = os.path.join(cache_dir, f"book_{bid}.txt")
+    if os.path.exists(cache_path):
+        return open(cache_path, encoding="utf-8", errors="replace").read()
     urls = [f"https://www.gutenberg.org/files/{bid}/{bid}-0.txt",
             f"https://www.gutenberg.org/files/{bid}/{bid}.txt",
             f"https://www.gutenberg.org/cache/epub/{bid}/pg{bid}.txt"]
@@ -42,7 +46,11 @@ def fetch_book(bid):
             m1, m2 = _START.search(txt), _END.search(txt)
             if m1 and m2:
                 txt = txt[m1.end():m2.start()]
-            return txt.strip()
+            txt = txt.strip()
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(cache_path, "w", encoding="utf-8") as f:
+                f.write(txt)
+            return txt
         except Exception:
             continue
     return None
@@ -56,13 +64,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--books", type=int, default=len(BOOKS))
     ap.add_argument("--code-files", type=int, default=40)
+    ap.add_argument("--seed", type=int, default=42,
+                    help="shuffle seed; vary across multi-seed confirmatory runs (books fetched once via cache)")
+    ap.add_argument("--cache-dir", default="data/raw/cache",
+                    help="raw books cached here so different seeds reshuffle the same downloaded text")
     ap.add_argument("--out", default="data/raw/corpus.txt")
     ap.add_argument("--readme", default="data/DATA_README.md")
     args = ap.parse_args()
 
     prose_sources, code_sources, pieces = [], [], []
     for bid in list(BOOKS)[:args.books]:
-        t = fetch_book(bid)
+        t = fetch_book(bid, args.cache_dir)
         if t:
             prose_sources.append((bid, BOOKS[bid], len(t.encode("utf-8"))))
             pieces += chunkify(t)
@@ -79,18 +91,20 @@ def main():
         except Exception:
             pass
 
-    random.seed(42)
+    random.seed(args.seed)
     random.shuffle(pieces)
     corpus = "\n".join(pieces)
     cb = corpus.encode("utf-8")
 
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    out_dir = os.path.dirname(args.out)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         f.write(corpus)
 
     with open(args.readme, "w", encoding="utf-8") as f:
         f.write(f"# EXP-001 corpus provenance\n\nBuilt {datetime.datetime.now(datetime.timezone.utc).isoformat()}\n")
-        f.write(f"Total: {len(cb):,} bytes ({len(cb) / 1e6:.2f} MB). Shuffled at 8KB granularity, seed=42.\n")
+        f.write(f"Total: {len(cb):,} bytes ({len(cb) / 1e6:.2f} MB). Shuffled at 8KB granularity, seed={args.seed}.\n")
         f.write(f"Code from local stdlib: {libdir}\n\n## Prose (Project Gutenberg, public domain)\n")
         for bid, title, nb in prose_sources:
             f.write(f"- [{bid}] {title} ({nb // 1024} KB) - gutenberg.org/ebooks/{bid}\n")
