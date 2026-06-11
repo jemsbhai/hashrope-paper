@@ -330,3 +330,56 @@ stable across seeds (per-seed means within ~1 std), (ii) mp>rayon sign test is s
 within-run CI. Cells that fail (expected: small/marginal t5) are reported honestly as such, not
 dropped silently. If the direction does NOT hold, S1 is downgraded and re-examined — the plan is
 written before the data precisely so this is not retrofitted.
+
+### Results (filled 2026-06-11, post-run; plan above unchanged)
+
+**Run:** 3 seeds {42,43,44} x 3 invocations = n=9 independent process runs/cell; reps=5 within each.
+**Corpora (SHA-256[:16]):** 42=fda6a43a3fe34184, 43=85ca58707bae1597, 44=dfd645be94bcddce.
+**Artifacts:** results/confirm/summary.json + results/confirm/s{42,43,44}_i{0,1,2}/.
+Speedup vs serial whole-string; mean +/- std across the 9 runs (NOT within-run CI):
+
+| cell | chunk (rayon@1) | rayon@16 | mp@16 | mp>rayon (paired sign test) |
+|---|---|---|---|---|
+| gpt2 1 MB | 1.46 +/- 0.01 | 6.09 +/- 0.53 | 7.01 +/- 0.72 | **9/9, p=0.004** (median diff +0.87) |
+| gpt2 4 MB | 1.50 +/- 0.02 | 6.62 +/- 0.37 | 7.59 +/- 0.41 | **9/9, p=0.004** (median diff +1.06) |
+| t5 1 MB | 1.30 +/- 0.02 | 6.71 +/- 0.26 | 6.39 +/- 0.30 | 2/9, p=0.18 (n.s.; **rayon ahead**) |
+| t5 4 MB | 1.36 +/- 0.02 | 6.51 +/- 0.33 | 7.16 +/- 0.40 | 9/9, p=0.004 (median diff +0.54) |
+
+Per-seed means (corpus-robustness): all within ~1 std of the grand mean for every cell (e.g.
+gpt2 4 MB rayon per-seed {6.90,6.46,6.51}, mp {7.69,7.64,7.46}). chunk-only per-seed spread <=0.01.
+
+### Promotion-criterion evaluation (verbatim against the committed criterion)
+- **gpt2 1 MB:** (i) rayon per-seed max-dev 0.49 < std 0.53; mp max-dev 0.43 < std 0.72 -> stable.
+  (ii) 9/9, p=0.004. (iii) mean+/-std. **PASS.**
+- **gpt2 4 MB:** (i) stable (devs << std). (ii) 9/9, p=0.004. (iii) mean+/-std. **PASS.**
+- **Verdict: S1 -> SUPPORTED (confirmatory)** for gpt2 large-context. t5 reported honestly:
+  t5 4 MB confirms MP>rayon (9/9); **t5 1 MB is an exception** (rayon 6.71 vs mp 6.39, 2/9, n.s.) --
+  NOT dropped, reported as a regime where rayon and MP are comparable (rayon marginally ahead).
+
+### Observations / honest corrections (this supersedes pilot magnitudes)
+1. **Magnitude corrected DOWN; pilot was the artifact.** Confirmatory mp@16 gpt2 4 MB = 7.59 +/-
+   0.41; all 9 runs in [7.16, 8.42]. The pilot single-runs (10.43, 10.97x) sit ABOVE every
+   confirmatory run -- a systematic session-level gap, not noise. Hypothesis (not instrumented):
+   under the sustained 18-run load, 16-core workloads (mp) throttle harder than the 1-core serial
+   baseline, compressing the ratio; the pilot caught a cold-thermal peak. **The confirmatory
+   steady-state supersedes the pilot peak** -- and steady-state is what a real server experiences,
+   so it is the correct number to report. (This is the THIRD downward correction after de-tiling
+   and the mp32 cherry-pick exclusion; each makes the claim more reproducible.)
+2. **Effect size is modest, not dramatic.** MP beats rayon by ~13-16% (median diff +0.87 / +1.06
+   for gpt2), NOT the ~60% the pilot 10-vs-6.5 implied. The WIN is highly reliable (9/9, p=0.004);
+   the MARGIN is small. Both backends are 16-core so they throttle similarly -> the RELATIVE result
+   is robust to the thermal effect even though absolute speedups compressed.
+3. **Design caveat (conservative for MP):** within each invocation the M call (mp) runs AFTER the
+   P call (rayon), i.e. on an already-warmed machine. If anything this DISADVANTAGES mp; mp wins
+   gpt2 9/9 regardless. A future run could randomize P/M order or cool between calls.
+4. **chunk-only is the most reproducible result:** 1.30-1.51x, std <=0.02, monotonic in length.
+   The retracted 4.12x is replaced by: ~1.5x free (single-thread) + ~6.6x rayon / ~7.6x mp at
+   16-way for gpt2 4 MB, all on a provably-identical token stream.
+5. **Independence caveat:** the 9 runs are one session (shared thermal/background state), so std may
+   understate cross-SESSION variance. Defensible as a controlled confirmatory; a cross-day repeat
+   would further harden it (logged as optional future work, not blocking).
+
+### Claim movement
+S1: SUPPORTED (pilot) -> **SUPPORTED (confirmatory)** for gpt2 >=1 MB (direction + mean+/-std
+magnitudes + significant paired MP>rayon). t5 1 MB MP-vs-rayon recorded as a comparable/rayon-
+ahead regime (honest negative for the MP-crossover at that single cell).
