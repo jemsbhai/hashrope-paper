@@ -14,10 +14,10 @@ with fresh EXP-XXX IDs. A prior figure does not count as a logged experiment.
 
 ## EXP-001: Tokenizer-aligned fat-leaf chunking — token-identity and ingestion speedup
 
-**Date:** 2026-06-10 (planned)
+**Date:** 2026-06-10 (planned); 2026-06-10 (correctness gate, in-progress)
 **Researcher:** Muntaser Syed
 **Type:** computational
-**Status:** planned
+**Status:** in-progress
 
 ### Hypothesis
 Snapping rope leaf boundaries to tokenizer-safe split points (rather than fixed
@@ -80,14 +80,65 @@ that bakes in the flaw).
 - **Seeds:** [fill]
 
 ### Results
-_[after run]_
+
+**Milestone A — token-identity correctness gate (Protocol steps 1–2). DONE 2026-06-10.**
+Timing benchmark (Protocol steps 3–4) NOT yet run.
+
+Implementation (`src/tokenizer_aligned.py`):
+- `tokenizer_aligned_chunker(text, target_leaf_bytes, tokenizer)` — proposes cuts at a
+  metaspace-aware "lone space flanked by non-whitespace" boundary (space leads the next
+  leaf); identity-safe fallback (leaf grows) where no safe boundary exists in a window.
+  Runtime path is a linear string scan; it does NOT tokenize the whole string.
+- `token_identity_report` — offline gate: concat(per-leaf ids) vs whole-string ids.
+- `fixed_byte_chunker` — the prior 4 KB behavior, kept as the control.
+
+Red-first test (`tests/test_tokenizer_aligned.py`, 20 tests = 2 tokenizer families ×
+3 leaf sizes, + UTF-8 safety + no-safe-boundary fallback):
+- RED at stub: 14 failed / 6 passed (the fixed-4KB control correctly fails identity).
+- GREEN after implementation: **20/20 passed** on the user's Windows machine.
+
+Token identity (primary gate) — EXACT (0 divergent tokens) for BOTH tokenizer families:
+- byte-level BPE = `gpt2`; SentencePiece = `t5-small`.
+- Sandbox pre-validation on real corpus (738 KB prose + 103 KB code): aligned → 0
+  divergences, 0 invalid-UTF-8 leaves, ideal leaf count (prose 181/181, code 26/26) for
+  both families.
+- Fixed-4KB control on the same corpus FAILS: first divergence ~token 1800; token-count
+  delta +0.085% (prose) / +0.049% (code); **6 invalid-UTF-8 leaves** on prose (blind byte
+  cuts bisected multibyte codepoints).
+
+Chunking performance (sandbox, gpt2): linear, ~8 MB/s pure-Python (6.7 MB → ~1630 leaves
+in ~0.8 s). Flagged for vectorization BEFORE the timing benchmark so chunking overhead does
+not deflate the measured ingestion speedup.
 
 ### Observations
-_[after run]_
+
+- The fixed-byte control surfaced claim **C3** live: naive byte cuts bisect multibyte
+  codepoints, producing un-tokenizable leaves. The S1 tokenization flaw and the C3
+  byte/char conflation share one root cause — cutting without tokenizer/UTF-8 awareness.
+- Generality result: a single boundary predicate + a **global** (not per-leaf) verify gate
+  covers both tokenizer families. An earlier attempt using per-leaf offset-boundary
+  verification passed for byte-BPE but FAILED for SentencePiece (per-sequence leading
+  metaspace + whitespace normalization corrupt the next leaf's opening) — fixed by the
+  lone-space predicate + global verification.
+- Speedup is NOT yet measured. Protocol steps 3–4 (serial whole-string vs parallel
+  per-leaf ingestion latency over a length sweep, ≥5 replicates, median + 95% CI,
+  warm/cold, corrected figure to replace `old/hashrope_gpu_ingestion.pdf`) remain.
 
 ### Interpretation
-_[after run]_
+
+- The token-identity proof obligation is satisfied: leaf-wise tokenization can be made
+  EXACTLY equal to whole-string tokenization for both major tokenizer families, with an
+  always-correct fallback. S1's correctness precondition — that the two pipelines produce
+  the same token stream — is now met and proven by test, converting S1 from
+  "non-equivalent pipelines" to "provably equivalent token streams." C3 is addressed at
+  the ingestion/chunking layer (HybridContext's own byte/char contract remains separate,
+  still open under C3).
+- The honest framing is stronger and more general than the prior GPT-2-only claim: a
+  correctness theorem (gate) + a family-aware predicate (parallelism) + a fallback (safety).
+- Claim movement: **S1 → IN-PROGRESS** (correctness gate passed; honest speedup pending).
 
 ### Artifacts
-- Results: experiments/exp_001_tokenizer_aligned/results/
-- Figures: experiments/exp_001_tokenizer_aligned/figures/
+- Implementation: src/tokenizer_aligned.py
+- Test (proof obligation): tests/test_tokenizer_aligned.py ; root conftest.py
+- Results (timing, pending): experiments/exp_001_tokenizer_aligned/results/
+- Figures (pending): experiments/exp_001_tokenizer_aligned/figures/
