@@ -1,0 +1,148 @@
+{
+  "experiment": "EXP-001-ingestion",
+  "timestamp_utc": "2026-06-11T06:43:32.482234+00:00",
+  "env": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 32,
+    "python": "3.12.2",
+    "rayon_num_threads_env": "16",
+    "transformers": "5.1.0",
+    "tokenizers": "0.22.2"
+  },
+  "params": {
+    "leaf_bytes": 4096,
+    "reps": 5,
+    "lengths": [
+      1048576,
+      4194304
+    ],
+    "mp_workers": []
+  },
+  "results": [
+    {
+      "tokenizer": "gpt2",
+      "corpus_bytes": 1048576,
+      "n_leaves": 256,
+      "n_tokens": 294244,
+      "leaf_bytes": 4096,
+      "rayon_num_threads": "16",
+      "measurements": {
+        "serial_whole": {
+          "median_ms": 381.77510001696646,
+          "ci95_ms": [
+            372.38169996999204,
+            382.7422000467777
+          ],
+          "min_ms": 372.38169996999204,
+          "reps": 5
+        },
+        "rayon_batch": {
+          "median_ms": 65.132400020957,
+          "ci95_ms": [
+            61.72870006412268,
+            74.22429998405278
+          ],
+          "min_ms": 61.72870006412268,
+          "reps": 5,
+          "identity": true,
+          "speedup_vs_serial": 5.861523602602185
+        }
+      },
+      "corpus_tiled": false
+    },
+    {
+      "tokenizer": "gpt2",
+      "corpus_bytes": 4194304,
+      "n_leaves": 1023,
+      "n_tokens": 1203176,
+      "leaf_bytes": 4096,
+      "rayon_num_threads": "16",
+      "measurements": {
+        "serial_whole": {
+          "median_ms": 1685.7835999689996,
+          "ci95_ms": [
+            1668.9323999453336,
+            1697.4947999697179
+          ],
+          "min_ms": 1668.9323999453336,
+          "reps": 5
+        },
+        "rayon_batch": {
+          "median_ms": 271.85879996977746,
+          "ci95_ms": [
+            259.76990000344813,
+            293.1937000248581
+          ],
+          "min_ms": 259.76990000344813,
+          "reps": 5,
+          "identity": true,
+          "speedup_vs_serial": 6.2009528481565
+        }
+      },
+      "corpus_tiled": false
+    },
+    {
+      "tokenizer": "t5-small",
+      "corpus_bytes": 1048576,
+      "n_leaves": 256,
+      "n_tokens": 270388,
+      "leaf_bytes": 4096,
+      "rayon_num_threads": "16",
+      "measurements": {
+        "serial_whole": {
+          "median_ms": 411.3792001735419,
+          "ci95_ms": [
+            407.42460009641945,
+            414.27860013209283
+          ],
+          "min_ms": 407.42460009641945,
+          "reps": 5
+        },
+        "rayon_batch": {
+          "median_ms": 59.86110004596412,
+          "ci95_ms": [
+            59.21079986728728,
+            64.25159983336926
+          ],
+          "min_ms": 59.21079986728728,
+          "reps": 5,
+          "identity": true,
+          "speedup_vs_serial": 6.872229208244852
+        }
+      },
+      "corpus_tiled": false
+    },
+    {
+      "tokenizer": "t5-small",
+      "corpus_bytes": 4194304,
+      "n_leaves": 1023,
+      "n_tokens": 1090660,
+      "leaf_bytes": 4096,
+      "rayon_num_threads": "16",
+      "measurements": {
+        "serial_whole": {
+          "median_ms": 1750.1944000832736,
+          "ci95_ms": [
+            1734.6637998707592,
+            1759.4539001584053
+          ],
+          "min_ms": 1734.6637998707592,
+          "reps": 5
+        },
+        "rayon_batch": {
+          "median_ms": 267.67069986090064,
+          "ci95_ms": [
+            247.28229991160333,
+            274.6405000798404
+          ],
+          "min_ms": 247.28229991160333,
+          "reps": 5,
+          "identity": true,
+          "speedup_vs_serial": 6.5386103185473425
+        }
+      },
+      "corpus_tiled": false
+    }
+  ]
+}
