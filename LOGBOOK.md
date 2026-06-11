@@ -237,3 +237,47 @@ single main-process gather).
 - multiprocessing {2..32}: results/ingestion_rayon1_20260611T045750Z.json
 - Figures: figures/exp001_speedup_vs_cores.{png,pdf}, figures/exp001_rayon_vs_mp.{png,pdf}
 - Speedup CI derivation: serial_median / parallel_ci95 (serial CI <1% wide)
+
+---
+
+## EXP-001 — Addendum B-repro: reproducibility check (CRITICAL methodological finding)
+
+**Date:** 2026-06-11 ~05:10 (America/New_York)
+**Trigger:** Protocol §7c.3 — re-run a key result and confirm. The backfill run
+(`rayon1_latest`, RAYON_NUM_THREADS=1, mp 2/4/8/16, same corpus seed=42) is an independent
+repeat of the MP cells originally measured in archive 045750Z. Compared median ms across runs.
+
+### Result — within-run 7-rep CIs UNDERESTIMATE cross-run variance
+Comparing identical cells, two independent runs, same seed:
+
+| cell | archived (045750Z) | backfill (latest) | cross-run |
+|---|---|---|---|
+| gpt2 4 MB mp16 | 10.43× (201 ms) | 10.97× (213 ms) | **disjoint** (~6%) |
+| gpt2 4 MB mp8  | 8.02× (260 ms)  | 8.68× (269 ms)  | overlap |
+| gpt2 1 MB mp16 | 7.85× (59 ms)   | 6.95× (77 ms)   | **disjoint** (~13%) |
+| gpt2 256 KB mp16 | 5.42×         | **1.36×**        | **disjoint (4× swing)** |
+| t5 256 KB mp16 | 1.83×           | 4.93×           | **disjoint** |
+| t5 1 MB mp16   | 6.89×           | 6.86×           | overlap |
+| t5 4 MB mp16   | 6.76×           | 7.07×           | overlap |
+
+Also: gpt2 64 KB chunk-only (rayon@1) = 1.14× (043517Z) vs **0.87×** (backfill) — crosses below
+1.0. The 64 KB "free chunking win" recorded in Addendum B is NOT reliably positive.
+
+### Interpretation (tempers Addendum B; append-only, does not edit it)
+- The 7-rep bootstrap CI captures rep-to-rep jitter but NOT across-run variance (process-pool
+  spawn, OS scheduling, thermal). For the MP backend especially, cross-run drift is ~6–25% at
+  large contexts and a 2–4× swing at small contexts. **The single-run CIs in Addendum B are too
+  tight to be the paper's uncertainty.**
+- What IS robust across runs (safe to claim): (a) the **direction** — tokenizer-aligned chunking
+  helps and parallel ingestion helps; (b) **large-context magnitudes to ~1 sig fig** — rayon ~6.5×
+  @16, MP ~10× @16 for gpt2 4 MB; (c) the **MP>rayon crossover at large contexts** (gpt2 4 MB MP
+  >10× in BOTH runs vs rayon ~6.5×).
+- What is NOT robust from one run (must NOT be stated as precise): exact multipliers; ALL ≤256 KB
+  cells (chunk_x and MP both swing across 1.0–5×); the gpt2 64 KB "free win."
+- **Action / claim adjustment:** S1 remains **SUPPORTED (pilot)** for the DIRECTION + 1-sig-fig
+  large-context magnitudes ONLY. The confirmatory run is upgraded in scope: not just ≥3 corpus
+  seeds, but ≥3 *independent process invocations per seed* (fresh interpreter + pool), reporting
+  mean ± std ACROSS runs as the uncertainty — the within-run CI is retired as the error bar.
+  Small contexts (≤64 KB) likely dropped from headline claims (overhead-dominated, unstable).
+- This is a genuine finding, not a failure: it tells us the benchmark's true error model and
+  prevents shipping over-precise multipliers a reviewer could fail to reproduce.

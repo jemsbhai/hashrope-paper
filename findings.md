@@ -17,17 +17,20 @@ independent gains, measured on a non-tiled prose+code corpus (gpt2, t5-small; 7 
 - a **size-dependent single-thread gain** from chunking alone (no parallelism), 1.14×–1.52×
   as context grows 64 KB → 4 MB (gpt2), because per-leaf tokenization avoids the whole-string
   tokenizer's superlinear cost; and
-- a **parallel gain** reaching ~6.5× at 16-way rayon threading (gpt2 4 MB 6.49× [6.4,6.7]), or
-  up to **10.43× [10.3,10.5]** with 16-way multiprocessing on large contexts, where
+- a **parallel gain** reaching ~6.5× at 16-way rayon threading (gpt2 4 MB), or ~10× with
+  16-way multiprocessing on large contexts (10.4–11.0× across two independent runs), where
   multiprocessing additionally parallelizes the Python token-object materialization that
   bottlenecks rayon's single-process gather.
 
-The two backends show a clean, CI-separated crossover: rayon is faster for small contexts
-(≤256 KB, where process/IPC overhead dominates) and multiprocessing is faster for large
-contexts (≥1 MB). Both saturate by 16-way on the test CPU (32-logical hybrid Raptor Lake);
-higher degrees regress. This identity-guaranteed result replaces the prior draft's retracted
-4.12× ingestion claim (which compared pipelines producing different token streams).
-_Pilot grade: single corpus realization (seed=42); ≥3-seed confirmatory run pending._
+The two backends show a crossover: rayon is faster for small contexts (≤256 KB, where
+process/IPC overhead dominates) and multiprocessing is faster for large contexts (≥1 MB). Both
+saturate by 16-way on the test CPU (32-logical hybrid Raptor Lake); higher degrees regress.
+This identity-guaranteed result replaces the prior draft's retracted 4.12× ingestion claim
+(which compared pipelines producing different token streams). _Pilot grade: a reproducibility
+re-run showed the within-run 7-rep CIs understate cross-run variance (~6–25% at large contexts,
+2–4× swings below 256 KB), so only the **direction** and **~1-sig-fig large-context magnitudes**
+are claimed here; ≤256 KB cells are unstable and excluded. Confirmatory run (≥3 corpus seeds × ≥3
+independent invocations, reporting mean ± std across runs) pending._
 
 ---
 
@@ -70,3 +73,21 @@ prediction; hypothesized parallelized Python token-object materialization (unpro
 corrected: earlier-quoted 10.99× was the noisy mp32 max (CI [5.5,11.5]); mp32 oversubscribed and
 excluded (gpt2 256KB mp32 = 0.77×). De-tiling reduced the chunk-only gain (1.6–1.9× → 1.1–1.5×).
 Pilot grade: single corpus realization (seed=42); ≥3-seed confirmatory pending. Prior 4.12× retracted.
+
+### 2026-06-11 — EXP-001 reproducibility check (independent re-run, same seed)
+
+**Key result:** An independent repeat of the MP cells (backfill vs archive 045750Z) shows the
+within-run 7-rep bootstrap CIs UNDERESTIMATE cross-run variance. Large-context results reproduce
+directionally but not to the digit; small-context cells are unstable.
+
+**Details (cross-run, same corpus seed=42):**
+- gpt2 4 MB mp16: 10.43× → 10.97× (disjoint ms CIs, ~6% drift) — both >10×, both beat rayon 6.49×
+- gpt2 1 MB mp16: 7.85× → 6.95× (~13% drift, disjoint)
+- gpt2 256 KB mp16: 5.42× → 1.36× (4× swing); t5 256 KB mp16: 1.83× → 4.93×
+- gpt2 64 KB chunk-only (rayon@1): 1.14× → 0.87× (crosses below 1.0)
+
+**Notes:** The benchmark's real error model is cross-run, not rep-to-rep. Robust claims: direction
+(chunking + parallel both help) and ~1-sig-fig large-context magnitudes (rayon ~6.5×, MP ~10× @16,
+gpt2 4 MB) and the MP>rayon crossover at large contexts. NOT robust: exact multipliers; all ≤256 KB
+cells. Confirmatory experiment upgraded to ≥3 seeds × ≥3 independent invocations, mean ± std across
+runs; within-run CI retired as the error bar; ≤64 KB likely dropped from headline claims.
