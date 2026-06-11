@@ -36,6 +36,10 @@ cold-thermal artifact — steady-state under sustained load is the reported figu
 what a production server experiences. Small contexts (≤256 KB) are overhead-dominated and
 excluded from headline claims._
 
+### Flatten in linear time (S4; EXP-002, CONFIRMATORY)
+
+The structure materializes to a contiguous byte string in linear time with **no hash recomputation**. The prior draft's ~945 ms flatten "tax" (claimed inherent and ~constant in edit count) was an implementation artifact: the old `flatten_context` rebuilt the rope by recursively splitting at midpoints, and every reconstructed leaf recomputed its polynomial hash from scratch — re-hashing Θ(N) bytes. Calling the library's in-order materializer `rope_to_bytes` instead performs **zero** splits, leaf re-allocations, or hash recomputations (operation-count guard, n=9 across 3 corpus seeds × 3 process invocations), giving fixed 0.546 ± 0.016 ms vs the broken path's 437 ± 60 ms at 2 MB. Both paths scale linearly in N (broken log-log slope 1.044 — the cost is redundant re-hashing, not an N log N allocation tree), so the speedup is roughly flat at 730–800× for N ≥ 1 MB. _Confirmatory (EXP-002). The multiplier is Python-interpreter-amplified — the broken arm is bottlenecked on pure-Python per-byte hashing; the language-independent result is the elimination of redundant work (guard-proven), which carries to the Rust implementation with a smaller constant. No library change was required._
+
 ---
 
 ## Raw Findings Log
@@ -122,3 +126,31 @@ Design caveat: M(mp)-after-P(rayon) ordering is conservative for MP; mp wins gpt
 Independence caveat: single session; a cross-day repeat would harden the error bars (optional,
 non-blocking). This is the third downward magnitude correction (after de-tiling and the mp32
 cherry-pick exclusion); each increased reproducibility.
+
+### 2026-06-11 — EXP-002: flatten fix (in-order materialization vs midpoint re-split, CONFIRMATORY)
+
+**Key result:** The ~945 ms flatten "tax" (S4) is an implementation artifact — redundant per-leaf hash
+recomputation from midpoint re-splitting — not an inherent O(N) serialization cost. The library's in-order
+`rope_to_bytes` materializes with **0** splits / **0** leaf re-allocs / **0** hash recomputations
+(operation-count guard), passing the pre-registered LOGBOOK criterion. n=9 (3 seeds × 3 invocations), real
+corpus (same as EXP-001), commit 47ea627, hashrope 0.2.2.
+
+**Promotion:** S4 REFRAMED → **SUPPORTED**.
+
+**Details (mean ± std, n=9):** fixed vs broken ms / speedup — 1M: 0.272±0.016 vs 199.18±4.48 / 735×;
+2M: 0.546±0.016 vs 437.36±59.97 / 800×; 4M: 1.166±0.053 vs 865.01±104.66 / 741×; 8M: 2.305±0.092 vs
+1692.57±167.06 / 734×. Guard (broken Leaf/split/hash ; fixed) — 2M 1022/511/1022, 8M 4092/2047/4092;
+fixed 0/0/0 at every size. Byte-identity fixed==original==broken, 0 mismatches (HARD gate). Log-log slope
+broken 1.044 (linear, not N log N); fixed 1.034 over ≥1M (full-sweep 1.327 is small-N timer-floor inflation;
+O(N)-fixed rests on the guard per the pre-committed decision). Corpus SHA-256[:16] 42=fda6a43a, 43=85ca5870,
+44=dfd645be.
+
+**Statistical tests:** Verdict gates on (i) byte-identity [HARD], (ii) guard, (iii) wall-clock — all PASS;
+(iv) scaling descriptive, (v) mean±std. Per-seed speedup means within ~10% across seeds (corpus-robust).
+
+**Notes:** The ~730–800× multiplier is Python-amplified (pure-Python per-byte hashing in the broken arm); the
+transferable claim is the elimination of redundant work (guard-proven), smaller constant expected in Rust
+(confirmation deferred). Absolute broken latency (437 ms @2M) differs from the historical 945 ms (different
+hardware/run); the mechanism and its removal are the claim, not a specific ms. Variance is asymmetric (fixed
+CV 3–6%, broken CV 10–14% at large N — allocation-churn sensitivity the cross-run error model captures);
+verdict robust (worst cell mean−1σ ≈ 700× ≫ 100×). No library change required. EXP-002 closed.

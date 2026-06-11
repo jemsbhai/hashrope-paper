@@ -388,10 +388,10 @@ ahead regime (honest negative for the MP-crossover at that single cell).
 
 ## EXP-002: Flatten — in-order materialization vs midpoint re-split (claim S4)
 
-**Date:** 2026-06-11 (planned)
+**Date:** 2026-06-11 (executed 2026-06-11)
 **Researcher:** Muntaser Syed
 **Type:** computational
-**Status:** planned
+**Status:** DONE (confirmatory)
 
 ### Hypothesis
 The prior draft's flatten "tax" (claim S4, `4_serialization_tax.csv`: Hybrid ≈ 945 ms,
@@ -467,8 +467,8 @@ of magnitude faster, alignment-independent. S4 flips from "inherent tax / damage
 ### Environment
 - **Hardware:** laptop, Intel Core i9-14900HX (24c/32t hybrid P+E), 64 GB RAM, RTX 4090 Laptop
   (idle; CPU-only experiment), AC power
-- **Software:** [fill at run: Windows 11, Python 3.12.2, hashrope version]
-- **Git commit:** [fill: clean SHA before the benchmark run]
+- **Software:** Windows 11 (10.0.26200), Python 3.12.2, hashrope 0.2.2
+- **Git commit:** 47ea627 (source clean; result JSON records `dirty=True` = untracked smoke-run result files, not source changes)
 - **Seeds:** corpus realization seeds {42, 43, 44} (≥3)
 
 ### Promotion criterion (verbatim, written before any data)
@@ -490,13 +490,39 @@ fix (read stored bytes, don't re-hash) holds in Rust too, where the absolute win
 Rust confirmation optional/deferred.
 
 ### Results
-[filled after run]
+**Run 2026-06-11**, commit `47ea627` (clean source; the result JSON's `dirty=True` is the untracked result files written by the optional smoke run, not source changes). Windows 11 (10.0.26200), Python 3.12.2, hashrope **0.2.2**, i9-14900HX (32 logical). Corpus seeds {42,43,44}, SHA-256[:16] `fda6a43a` / `85ca5870` / `dfd645be` (the SAME real corpus as EXP-001). **n = 9 runs/cell** (3 seeds × 3 invocations), reps=5 within each invocation (median), 2 s cool-down, fresh subprocess per (seed,invocation). Results: `experiments/exp_002_flatten/results/exp002_flatten_latest.json` (+ `…_20260611T191246Z.json`).
+
+| N (bytes) | leaves | broken ms (mean±std, CV) | fixed ms (mean±std, CV) | speedup (mean±std) | guard broken L/S/H | fixed |
+|-----------|-------:|-------------------------|------------------------|--------------------|--------------------|-------|
+| 64,000    | 16   | 11.23 ± 0.13 (1.2%)    | 0.003 ± 0.000 (7.2%)  | 3426.9 ± 219.8 | 30/15/30      | 0/0/0 |
+| 256,000   | 63   | 48.88 ± 1.04 (2.1%)    | 0.050 ± 0.012 (23.4%) | 1082.1 ± 469.5 | 126/63/126    | 0/0/0 |
+| 1,000,000 | 245  | 199.18 ± 4.48 (2.2%)   | 0.272 ± 0.016 (6.0%)  | 734.6 ± 39.3   | 510/255/510   | 0/0/0 |
+| 2,000,000 | 489  | 437.36 ± 59.97 (13.7%) | 0.546 ± 0.016 (2.8%)  | 800.1 ± 101.3  | 1022/511/1022 | 0/0/0 |
+| 4,000,000 | 977  | 865.01 ± 104.66 (12.1%)| 1.166 ± 0.053 (4.5%)  | 740.6 ± 65.5   | 2044/1023/2044| 0/0/0 |
+| 8,000,000 | 1954 | 1692.57 ± 167.06 (9.9%)| 2.305 ± 0.092 (4.0%)  | 733.8 ± 55.0   | 4092/2047/4092| 0/0/0 |
+
+(L/S/H = `Leaf` re-allocs / `rope_split` calls / `PolynomialHash.hash` calls, one instrumented pass per arm per size; mirrors `tests/test_flatten.py::_instrument`.) Empirical log-log slope (latency vs N): **broken 1.044**; fixed full-sweep 1.327; **fixed ≥1 MB 1.034**. Per-seed speedup means at N≥1M are within ~10% across seeds (2M: s42 891×, s43 746×, s44 764×; 8M: 769/716/716×) — no seed-specific artifact.
+
+**Promotion-criterion evaluation (verbatim against the criterion above):**
+- (i) byte-identity **[HARD]: PASS** — 0 mismatches across all 6 sizes × 3 seeds × 3 invocations (fixed == original == broken; the worker also re-checks identity after the rep loop, so persistence is confirmed).
+- (ii) operation-count guard: **PASS** — `flatten_fixed` = 0/0/0 at every size; `flatten_broken` = Θ(#leaves) (L = H = 2·splits, scaling linearly with #leaves ≈ N/4096), re-hashing Θ(N) bytes. The fix eliminates ALL redundant hashing.
+- (iii) wall-clock: **PASS** — at N=2,000,000 fixed 0.546 ms ≤ 5 ms AND speedup 800× ≥ 100×; speedup ≥ 100× at every size ≥ 256 KB (256K 1082×, 1M 735×, 2M 800×, 4M 741×, 8M 734×).
+- (iv) scaling (descriptive, per the pre-committed decision — **non-gating**, since only (i)/(ii)/(iii) gate): broken slope **1.044** (linear; **not** N log N — consistent with "the mechanism is measured redundant hashing"). **Honest note on the [0.85,1.2] band:** the *fixed* full-sweep slope (1.327) lands ABOVE the band because the sub-ms small-N points (64K–256K fixed ≈ 3–50 µs) are timer-floor dominated; the ≥1 MB subset (above the floor) gives **1.034**, in-band. O(N) for fixed is established by the **guard** (0 re-hash / single pass), as pre-committed — not by the full-sweep slope fit. Reporting both slopes was pre-registered in the bench; the inflation pattern is exactly what the decision predicted.
+- (v) mean ± std reported throughout (n=9); within-run CI retired.
+
+**VERDICT: PASS** (gates (i) HARD, (ii), (iii) all hold). → S4 promoted REFRAMED → SUPPORTED.
 
 ### Observations
-[filled after run]
+- The fix is mechanistically clean, not merely faster: the guard shows `rope_to_bytes` performs **literally zero** split / `Leaf` / hash operations, while the broken midpoint-resplit allocates and re-hashes Θ(#leaves) leaves (1022 allocs + 1022 hashes @2 M; 4092 + 4092 @8 M). The "tax" was redundant recomputation, exactly as the recon + sandbox predicted (sandbox @2 M had also reported 511 splits / 1022 allocs).
+- **Broken is empirically O(N) linear (slope 1.044), NOT O(N log N)** as the prior-outline shorthand and the PROGRAM title state. Per-leaf cost is ~constant (~0.7–0.9 ms/leaf ≈ hashing one 4 KB leaf in pure Python), so total ∝ #leaves ∝ N. The earlier "N log N allocations" framing was imprecise; the cost is linear redundant re-hashing. (Title in PROGRAM left verbatim as the experiment's label; correction recorded in its note + CLAIMS S4.)
+- Variance is asymmetric and informative: the **fixed** arm is rock-stable (CV 3–6% at N≥1M), the **broken** arm gets noisier with size (CV 10–14% at 2–8 M) — the allocation-churn / GC sensitivity the cross-run error model is built to capture. The verdict is robust to it: even at the worst cell (2 M, mean−1σ ≈ 700×) the speedup clears the 100× gate ~7×.
+- The 256 K speedup band is wide (1082 ± 470) only because **fixed** @256 K (0.050 ms) sits near the timer floor (CV 23%); broken @256 K is tight (CV 2.1%). Not a stability concern for the claim.
+- Provenance: corpus SHAs match EXP-001; `dirty=True` reflects the untracked smoke-run result files, source clean at 47ea627.
 
 ### Interpretation
-[filled after run]
+S4 moves from "inherent serialization tax / damage control" to a **supported strength**: the rope materializes in linear time with **zero hash recomputation**, and the prior ~945 ms-class "tax" is fully accounted for as redundant per-leaf re-hashing introduced by midpoint re-splitting — removed by calling the in-order materializer the library already ships (`rope_to_bytes`). **No library change was required.**
+
+**Scope / honesty (carried into the paper, per the pre-committed honesty note):** the headline ~730–800× is **Python-interpreter-amplified** — the broken arm's cost is pure-Python per-byte polynomial hashing, so the multiplier is a property of *this* implementation, not a language-independent constant. The transferable result is the **elimination of redundant work** (0 splits / 0 re-allocs / 0 re-hashing — the guard proves it), which holds in Rust with a smaller absolute constant. The paper states the mechanism (guard counts + linear broken scaling) as the claim and treats the ms multiplier as an implementation datum, not a fundamental bound. The absolute broken latency here (437 ms @2 M) differs from the historical 945 ms figure (different hardware/run); the *mechanism and its removal* are the claim, not a specific millisecond value. Rust confirmation remains optional/deferred (the conceptual fix is identical: read stored bytes, do not re-hash). **EXP-002 is closed.**
 
 ### Artifacts
 - Implementation/control: src/flatten.py
