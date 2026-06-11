@@ -281,3 +281,52 @@ Also: gpt2 64 KB chunk-only (rayon@1) = 1.14× (043517Z) vs **0.87×** (backfill
   Small contexts (≤64 KB) likely dropped from headline claims (overhead-dominated, unstable).
 - This is a genuine finding, not a failure: it tells us the benchmark's true error model and
   prevents shipping over-precise multipliers a reviewer could fail to reproduce.
+
+---
+
+## EXP-001 — Addendum C (Milestone C): CONFIRMATORY run (planned)
+
+**Date:** 2026-06-11 (planned, pre-run)
+**Status:** planned → (results to follow)
+**Motivated by:** Addendum B-repro — within-run CIs understate cross-run variance, so the
+confirmatory error bar must be the spread across independent invocations and corpus seeds.
+
+### Hypothesis
+The DIRECTION established in pilot is stable under proper replication: at large contexts, (a)
+tokenizer-aligned chunking gives a single-thread gain >1.0, (b) parallel ingestion gives a large
+gain, and (c) multiprocessing beats rayon. Concretely we expect, across seeds x invocations,
+rayon@16 mean ~6× and mp@16 mean ~8–11× for gpt2 at 4 MB, with mp>rayon in a clear majority of
+paired runs (sign test). We do NOT pre-commit to exact multipliers (the pilot showed ~6–25% drift).
+
+### Design
+- **Replication unit = one independent process invocation** (fresh interpreter + fresh pool).
+- Grid: seeds {42,43,44} x invocations {3} = **n=9 independent runs per cell**.
+- Operating points (large contexts only, where the effect is real): chunk-only (rayon@1),
+  rayon@16, mp@16; per invocation two bench subprocesses (P: rayon@16; M: rayon@1 + mp@16).
+- Lengths {1 MB, 4 MB}; tokenizers {gpt2, t5-small}; reps=5 within each invocation (just to
+  stabilise each invocation's point estimate — NOT the error bar).
+- **Error bar = std across the 9 runs** (+ t-based 95% CI on the mean). Within-run bootstrap CI is
+  retired. Corpus robustness shown via per-seed means. Paired **sign test** of mp@16 vs rayon@16
+  (paired by seed,invocation); report wins/n and exact two-sided p.
+
+### Independent / dependent variables
+- IV: corpus seed, invocation index, backend (chunk/rayon/mp), context length, tokenizer.
+- DV: speedup vs serial whole-string (per invocation), aggregated to mean ± std (n=9).
+
+### Protocol (frozen command)
+```
+python scripts/exp001_confirm.py --seeds 42,43,44 --invocations 3 \
+    --tokenizers gpt2 t5-small --lengths 1048576,4194304 --reps 5 --rayon-degree 16 --mp-degree 16
+```
+Harness: `scripts/exp001_confirm.py` (validated end-to-end on a 2x2 sandbox grid). Corpora
+`data/raw/corpus_s{42,43,44}.txt` built via `prep_corpus.py --seed` (books cached: one download).
+Outputs: `experiments/exp_001_tokenizer_aligned/results/confirm/{s<S>_i<inv>/, summary.json}`.
+Env recorded per sub-run in each bench JSON; corpus SHA-256 (16) recorded in summary.json.
+
+### Promotion criterion (what flips S1 pilot -> confirmatory)
+S1 -> **SUPPORTED (confirmatory)** iff, for gpt2 at >=1 MB: (i) rayon@16 mean and mp@16 mean are
+stable across seeds (per-seed means within ~1 std), (ii) mp>rayon sign test is significant
+(>=8/9, p<=0.05), and (iii) the reported numbers are stated as mean ± std (n=9), never as the
+within-run CI. Cells that fail (expected: small/marginal t5) are reported honestly as such, not
+dropped silently. If the direction does NOT hold, S1 is downgraded and re-examined — the plan is
+written before the data precisely so this is not retrofitted.
