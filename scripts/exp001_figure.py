@@ -1,10 +1,14 @@
-"""EXP-001 analysis + figure: speedup-vs-cores curve and chunking/parallelism decomposition.
+"""EXP-001 analysis + figures: rayon-batch vs multiprocessing scaling, with the
+chunking-vs-parallelism decomposition.
 
-Reads ingestion_rayon<N>_latest.json files (one per RAYON_NUM_THREADS) from a results dir,
-plots total speedup vs thread count per (tokenizer, context-length) cell, and prints a
-decomposition table separating the single-thread chunking effect from parallel scaling.
+Reads ingestion_rayon<N>_latest.json files (one per RAYON_NUM_THREADS). The rayon curve
+comes from each file's rayon_batch at thread count N; the multiprocessing curve comes from
+any file carrying mp_<W> measurements (run once with --mp-workers). Produces:
+  - exp001_speedup_vs_cores.png : rayon scaling across (tokenizer, length) cells
+  - exp001_rayon_vs_mp.png      : rayon vs MP at the largest context (if MP data present)
+and prints a table with chunking factor and both peaks side by side.
 
-    python scripts/exp001_figure.py --results-dir experiments/exp_001_tokenizer_aligned/results --out-dir figures
+    python scripts/exp001_figure.py
 """
 import os
 import re
@@ -20,64 +24,76 @@ _TAG = re.compile(r"ingestion_rayon([0-9]+)_latest\.json$")
 
 
 def load(results_dir):
-    """-> ({(tokenizer, bytes): {threads: speedup}}, cpu_count, {cell: tiled})"""
-    cells, tiled = {}, {}
+    rayon, mp, tiled = {}, {}, {}
     cpu = None
     for path in sorted(glob.glob(os.path.join(results_dir, "ingestion_rayon*_latest.json"))):
         m = _TAG.search(os.path.basename(path))
         if not m:
-            continue  # skip the 'all' tag; the curve needs explicit thread counts
+            continue  # skip the 'all' tag; curves need explicit thread counts
         threads = int(m.group(1))
         d = json.load(open(path, encoding="utf-8"))
         cpu = cpu or d.get("env", {}).get("cpu_count")
         for r in d["results"]:
             key = (r["tokenizer"], r["corpus_bytes"])
-            cells.setdefault(key, {})[threads] = r["measurements"]["rayon_batch"]["speedup_vs_serial"]
+            meas = r["measurements"]
+            rayon.setdefault(key, {})[threads] = meas["rayon_batch"]["speedup_vs_serial"]
             tiled[key] = r.get("corpus_tiled", False)
-    return cells, cpu, tiled
+            for k, v in meas.items():
+                if k.startswith("mp_"):
+                    mp.setdefault(key, {})[int(k[3:])] = v["speedup_vs_serial"]
+    return rayon, mp, cpu, tiled
 
 
-def decompose(cells):
-    rows = []
-    for (tok, nbytes), sp in sorted(cells.items()):
-        threads = sorted(sp)
-        base = sp.get(1)  # chunking-only factor (no parallelism)
-        peak_t = max(threads, key=lambda t: sp[t])
-        peak = sp[peak_t]
-        par = (peak / base) if base else float("nan")
-        eff = (par / peak_t) if base else float("nan")
-        rows.append({"tokenizer": tok, "bytes": nbytes, "chunking_x": base,
-                     "peak_x": peak, "peak_threads": peak_t,
-                     "parallel_x": par, "efficiency": eff})
-    return rows
-
-
-def figure(cells, cpu, out_path):
+def scaling_fig(rayon, cpu, out):
     plt.figure(figsize=(8, 5.5))
-    all_threads = sorted({t for sp in cells.values() for t in sp})
-    for (tok, nbytes), sp in sorted(cells.items()):
+    allt = sorted({t for sp in rayon.values() for t in sp})
+    for (tok, nb), sp in sorted(rayon.items()):
         xs = sorted(sp)
-        plt.plot(xs, [sp[t] for t in xs], marker="o", linewidth=1.8,
-                 label=f"{tok} @ {nbytes // 1024}KB")
-    ones = [sp[1] for sp in cells.values() if 1 in sp]
+        plt.plot(xs, [sp[t] for t in xs], marker="o", linewidth=1.7, label=f"{tok} @ {nb // 1024}KB")
+    ones = [sp[1] for sp in rayon.values() if 1 in sp]
     if ones:
         base = sum(ones) / len(ones)
-        plt.plot(all_threads, [base] * len(all_threads), "k--", alpha=0.55, linewidth=1,
-                 label=f"chunking-only (~{base:.2f}x, no parallelism)")
+        plt.plot(allt, [base] * len(allt), "k--", alpha=0.55, linewidth=1,
+                 label=f"chunking-only (~{base:.2f}x)")
     plt.xscale("log", base=2)
-    plt.xticks(all_threads, [str(t) for t in all_threads])
-    plt.xlabel("rayon threads (CPU cores used)")
-    plt.ylabel("ingestion speedup vs serial whole-string")
-    title = "EXP-001: tokenizer-aligned parallel tokenization"
-    if cpu:
-        title += f"  (host cpu_count={cpu})"
-    plt.title(title)
+    plt.xticks(allt, [str(t) for t in allt])
+    plt.xlabel("rayon threads (cores)")
+    plt.ylabel("speedup vs serial whole-string")
+    plt.title(f"EXP-001: tokenizer-aligned parallel tokenization (cpu_count={cpu})")
     plt.grid(True, which="both", alpha=0.3)
-    plt.legend(fontsize=8, loc="upper left")
+    plt.legend(fontsize=8)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
-    plt.savefig(out_path.replace(".png", ".pdf"))
-    return out_path
+    plt.savefig(out, dpi=150)
+    plt.savefig(out.replace(".png", ".pdf"))
+
+
+def compare_fig(rayon, mp, cpu, out):
+    if not mp:
+        return False
+    L = sorted({b for (_, b) in rayon})[-1]
+    plt.figure(figsize=(8, 5.5))
+    for (tok, nb) in sorted(rayon):
+        if nb != L:
+            continue
+        xs = sorted(rayon[(tok, nb)])
+        plt.plot(xs, [rayon[(tok, nb)][t] for t in xs], marker="o", linewidth=1.8, label=f"{tok} rayon")
+        if (tok, nb) in mp:
+            xm = sorted(mp[(tok, nb)])
+            plt.plot(xm, [mp[(tok, nb)][w] for w in xm], marker="s", linestyle="--", linewidth=1.8,
+                     label=f"{tok} multiproc")
+    plt.xscale("log", base=2)
+    xt = sorted({t for (tok, nb) in rayon if nb == L for t in rayon[(tok, nb)]} |
+                {w for (tok, nb) in mp if nb == L for w in mp[(tok, nb)]})
+    plt.xticks(xt, [str(t) for t in xt])
+    plt.xlabel("workers / threads (cores)")
+    plt.ylabel("speedup vs serial whole-string")
+    plt.title(f"EXP-001: rayon vs multiprocessing @ {L // 1024}KB (cpu_count={cpu})")
+    plt.grid(True, which="both", alpha=0.3)
+    plt.legend(fontsize=9)
+    plt.tight_layout()
+    plt.savefig(out, dpi=150)
+    plt.savefig(out.replace(".png", ".pdf"))
+    return True
 
 
 def main():
@@ -85,22 +101,29 @@ def main():
     ap.add_argument("--results-dir", default="experiments/exp_001_tokenizer_aligned/results")
     ap.add_argument("--out-dir", default="figures")
     args = ap.parse_args()
-    cells, cpu, tiled = load(args.results_dir)
-    if not cells:
+    rayon, mp, cpu, tiled = load(args.results_dir)
+    if not rayon:
         print("No ingestion_rayon<N>_latest.json files found in", args.results_dir)
         sys.exit(1)
-    rows = decompose(cells)
     os.makedirs(args.out_dir, exist_ok=True)
-    fig = figure(cells, cpu, os.path.join(args.out_dir, "exp001_speedup_vs_cores.png"))
+    scaling_fig(rayon, cpu, os.path.join(args.out_dir, "exp001_speedup_vs_cores.png"))
+    has_mp = compare_fig(rayon, mp, cpu, os.path.join(args.out_dir, "exp001_rayon_vs_mp.png"))
 
-    print(f"\nhost cpu_count = {cpu}\n")
-    print(f"{'tokenizer':<12}{'KB':>6}{'tiled':>7}{'chunk_x':>9}{'peak_x':>8}{'@thr':>6}{'parallel_x':>12}{'eff':>7}")
-    for r in rows:
-        t = tiled[(r["tokenizer"], r["bytes"])]
-        print(f"{r['tokenizer']:<12}{r['bytes'] // 1024:>6}{str(t):>7}"
-              f"{r['chunking_x']:>9.2f}{r['peak_x']:>8.2f}{r['peak_threads']:>6}"
-              f"{r['parallel_x']:>12.2f}{r['efficiency'] * 100:>6.0f}%")
-    print(f"\nwrote {fig} (+ .pdf)")
+    print(f"\ncpu_count = {cpu}\n")
+    hdr = f"{'tokenizer':<11}{'KB':>6}{'tiled':>7}{'chunk_x':>9}{'rayon_pk':>10}{'@thr':>6}"
+    if mp:
+        hdr += f"{'mp_pk':>9}{'@wrk':>6}{'winner':>8}"
+    print(hdr)
+    for (tok, nb) in sorted(rayon):
+        sp = rayon[(tok, nb)]
+        base = sp.get(1, float("nan"))
+        rt = max(sp, key=lambda t: sp[t]); rpk = sp[rt]
+        line = f"{tok:<11}{nb // 1024:>6}{str(tiled[(tok, nb)]):>7}{base:>9.2f}{rpk:>10.2f}{rt:>6}"
+        if mp and (tok, nb) in mp:
+            mw = max(mp[(tok, nb)], key=lambda w: mp[(tok, nb)][w]); mpk = mp[(tok, nb)][mw]
+            line += f"{mpk:>9.2f}{mw:>6}{('mp' if mpk > rpk else 'rayon'):>8}"
+        print(line)
+    print(f"\nwrote figures (scaling{' + rayon_vs_mp' if has_mp else ''})")
 
 
 if __name__ == "__main__":
