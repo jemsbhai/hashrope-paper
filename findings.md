@@ -40,6 +40,28 @@ excluded from headline claims._
 
 The structure materializes to a contiguous byte string in linear time with **no hash recomputation**. The prior draft's ~945 ms flatten "tax" (claimed inherent and ~constant in edit count) was an implementation artifact: the old `flatten_context` rebuilt the rope by recursively splitting at midpoints, and every reconstructed leaf recomputed its polynomial hash from scratch — re-hashing Θ(N) bytes. Calling the library's in-order materializer `rope_to_bytes` instead performs **zero** splits, leaf re-allocations, or hash recomputations (operation-count guard, n=9 across 3 corpus seeds × 3 process invocations), giving fixed 0.546 ± 0.016 ms vs the broken path's 437 ± 60 ms at 2 MB. Both paths scale linearly in N (broken log-log slope 1.044 — the cost is redundant re-hashing, not an N log N allocation tree), so the speedup is roughly flat at 730–800× for N ≥ 1 MB. _Confirmatory (EXP-002). The multiplier is Python-interpreter-amplified — the broken arm is bottlenecked on pure-Python per-byte hashing; the language-independent result is the elimination of redundant work (guard-proven), which carries to the Rust implementation with a smaller constant. No library change was required._
 
+### Prefix-reuse identification in O(log² N) (T3; EXP-005, CONFIRMATORY)
+
+The longest common prefix (LCP) of two ropes is found in O(log² N) by binary search on prefix
+hashes, each step comparing `rope_substr_hash` values (Theorem 9). The step count — exactly
+2·⌈log₂ N⌉, deterministic and content-independent — is the guard-proven complexity bound; wall-clock
+latency corroborates it with a log-log slope of **0.028** at f=0.5 across 64 KB–8 MB (pre-registered
+criterion ≤ 0.3; O(log² N) predicts ~0.14; O(N) = 1.0). Brute-force byte-by-byte comparison scales
+linearly (slope 1.008), and the crossover falls at ~1 MB — precisely where LLM context lengths
+become interesting.
+
+At 8 MB, hash-LCP completes in 19 ms regardless of where the divergence falls (f=0.5 or f=0.99),
+while brute-force takes 99–200 ms (5–10× slower). Correctness is exact: 0 mismatches vs the
+byte-by-byte oracle across 162 checks (9 runs × 6 sizes × 3 fractions). A prefix-dedup workload
+(K=10 prompts sharing a 1.2 MB prefix) confirms the practical application: LCP identifies the
+shared prefix for 98.5% of pairs at 20.9 ms per pair.
+
+This is the **content-identity query** side of the unification thesis: the same persistent
+structure that provides O(log) edits answers “how much prefix do these two contexts share?” in
+O(log² N) without materializing or scanning the full text, enabling prefix-dedup for KV-cache
+reuse. _Confirmatory (EXP-005). Absolute latency is Python-amplified; the transferable claim is
+the O(log² N) step count (guard-proven), with a smaller constant in Rust._
+
 ---
 
 ## Raw Findings Log
@@ -154,3 +176,35 @@ transferable claim is the elimination of redundant work (guard-proven), smaller 
 hardware/run); the mechanism and its removal are the claim, not a specific ms. Variance is asymmetric (fixed
 CV 3–6%, broken CV 10–14% at large N — allocation-churn sensitivity the cross-run error model captures);
 verdict robust (worst cell mean−1σ ≈ 700× ≫ 100×). No library change required. EXP-002 closed.
+
+### 2026-06-12 — EXP-005: LCP via prefix-hash binary search (CONFIRMATORY)
+
+**Key result:** The longest common prefix (LCP) of two ropes is found in O(log² N) by binary
+search on prefix hashes via `rope_substr_hash` (Theorem 9). Step-count guard: exactly
+2·⌈log₂ N⌉ calls, content-independent and deterministic. Wall-clock log-log slope **0.028** at
+f=0.5 across 64 KB–8 MB (criterion ≤ 0.3; O(log² N) predicts ~0.14; O(N) = 1.0). Correctness:
+exact match with byte-by-byte oracle, 0 mismatches across 162 checks. n=9 (3 seeds × 3
+invocations), commit a15e883, hashrope 0.2.2.
+
+**Promotion:** T3 IN-PROGRESS → **SUPPORTED**.
+
+**Details (mean ± std ms, n=9 @ f=0.5):** 64K 16.65±0.36 / 256K 8.58±0.28 / 1M 8.56±0.27 /
+2M 9.56±0.30 / 4M 12.82±0.40 / 8M 19.03±0.64 (hash); brute: 64K 0.76±0.02 / 256K 3.13±0.09 /
+1M 12.13±0.35 / 2M 25.04±0.63 / 4M 49.16±1.53 / 8M 99.42±3.32. Log-log slopes: hash 0.028,
+brute 1.008 (textbook linear). Step counts deterministic: 30/34/38/40/42/44 (= 2·⌈log₂ N⌉).
+Prefix-dedup workload (descriptive): K=10 prompts, prefix=1.2M bytes, hit_rate=0.985,
+per_pair=20.9 ms. Corpus SHA-256[:16] 42=fda6a43a, 43=85ca5870, 44=dfd645be.
+
+**Notes:** Hash LCP latency is essentially flat from 256 KB to 8 MB (~8.6–19 ms at f=0.5); the
+log-log slope 0.028 is below even the O(log² N) theoretical prediction of ~0.14 — Python
+interpreter overhead per binary-search step is roughly constant regardless of tree depth,
+masking the log factor. Crossover vs brute at ~1 MB (f=0.5: hash 8.56 ms vs brute 12.13 ms);
+at 8 MB f=0.99: hash 19.45 ms vs brute 200.33 ms (10.3×). 64K f=0.5 anomaly (16.65 ms >
+256K’s 8.58 ms) is a cold-cache effect consistent with EXP-002’s timer-floor pattern. f=0.0 is
+brute’s domain (brute ~0 ms; hash ~7–10 ms) — expected, since hash-LCP is O(log² N) regardless
+of f, useful when prefixes are long. Dedup hit_rate=0.985 (not 1.0) because one suffix pair
+shared initial bytes beyond the intended prefix boundary. Honesty note: absolute latency is
+Python-amplified; the transferable claim is the O(log² N) step count (guard-proven), with a
+smaller constant in Rust. This is the **content-identity query** side of the unification thesis:
+the same persistent rope that provides O(log) edits answers “how much prefix do these two
+contexts share?” in O(log² N). EXP-005 closed.

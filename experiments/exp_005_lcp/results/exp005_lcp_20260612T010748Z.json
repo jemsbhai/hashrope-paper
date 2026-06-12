@@ -1,0 +1,375 @@
+{
+  "experiment": "EXP-005",
+  "claim": "T3",
+  "title": "LCP via prefix-hash binary search: O(log^2 N) timing + correctness",
+  "timestamp_utc": "2026-06-12T01:07:48.991148+00:00",
+  "git_commit": "52cabebb284c306f6b5db8bab315c2d82bd554ac",
+  "git_dirty": true,
+  "env": {
+    "python_version": "3.12.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 32,
+    "hashrope_version": "0.2.2",
+    "hashrope_file": "E:\\data\\code\\claudecode\\hashrope\\packages\\python\\hashrope\\__init__.py"
+  },
+  "params": {
+    "seeds": [
+      42
+    ],
+    "invocations": 1,
+    "n_runs_per_cell": 1,
+    "reps": 2,
+    "sizes": [
+      64000,
+      256000,
+      1000000
+    ],
+    "fractions": [
+      0.0,
+      0.5,
+      0.99
+    ],
+    "primary_fraction": 0.5,
+    "cooldown_s": 2.0,
+    "within_invocation_estimator": "median_of_reps",
+    "error_bar": "std across runs (n=seeds*invocations); within-run CI retired per the EXP-001 cross-run error model"
+  },
+  "corpus_sha256_16": {
+    "42": "fda6a43a3fe34184"
+  },
+  "per_size_fraction": {
+    "64000_0.0": {
+      "n": 64000,
+      "f": 0.0,
+      "expected_lcp": 0,
+      "hash_ms": {
+        "mean": 7.399800117127597,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          7.399800117127597
+        ]
+      },
+      "brute_ms": {
+        "mean": 0.001049949787557125,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.001049949787557125
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        30
+      ],
+      "step_count_max_seen": 30,
+      "max_steps_allowed": 34,
+      "step_all_ok": true
+    },
+    "64000_0.5": {
+      "n": 64000,
+      "f": 0.5,
+      "expected_lcp": 32000,
+      "hash_ms": {
+        "mean": 17.272100085392594,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          17.272100085392594
+        ]
+      },
+      "brute_ms": {
+        "mean": 0.7842000341042876,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.7842000341042876
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        30
+      ],
+      "step_count_max_seen": 30,
+      "max_steps_allowed": 34,
+      "step_all_ok": true
+    },
+    "64000_0.99": {
+      "n": 64000,
+      "f": 0.99,
+      "expected_lcp": 63360,
+      "hash_ms": {
+        "mean": 12.81600003130734,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          12.81600003130734
+        ]
+      },
+      "brute_ms": {
+        "mean": 1.5842999564483762,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          1.5842999564483762
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        32
+      ],
+      "step_count_max_seen": 32,
+      "max_steps_allowed": 34,
+      "step_all_ok": true
+    },
+    "256000_0.0": {
+      "n": 256000,
+      "f": 0.0,
+      "expected_lcp": 0,
+      "hash_ms": {
+        "mean": 8.747449843212962,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          8.747449843212962
+        ]
+      },
+      "brute_ms": {
+        "mean": 0.00045006163418293,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.00045006163418293
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        34
+      ],
+      "step_count_max_seen": 34,
+      "max_steps_allowed": 38,
+      "step_all_ok": true
+    },
+    "256000_0.5": {
+      "n": 256000,
+      "f": 0.5,
+      "expected_lcp": 128000,
+      "hash_ms": {
+        "mean": 8.7815000442788,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          8.7815000442788
+        ]
+      },
+      "brute_ms": {
+        "mean": 3.1930500408634543,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          3.1930500408634543
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        34
+      ],
+      "step_count_max_seen": 34,
+      "max_steps_allowed": 38,
+      "step_all_ok": true
+    },
+    "256000_0.99": {
+      "n": 256000,
+      "f": 0.99,
+      "expected_lcp": 253440,
+      "hash_ms": {
+        "mean": 20.781799918040633,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          20.781799918040633
+        ]
+      },
+      "brute_ms": {
+        "mean": 6.327549926936626,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          6.327549926936626
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        36
+      ],
+      "step_count_max_seen": 36,
+      "max_steps_allowed": 38,
+      "step_all_ok": true
+    },
+    "1000000_0.0": {
+      "n": 1000000,
+      "f": 0.0,
+      "expected_lcp": 0,
+      "hash_ms": {
+        "mean": 8.234999957494438,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          8.234999957494438
+        ]
+      },
+      "brute_ms": {
+        "mean": 0.00045006163418293,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.00045006163418293
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        38
+      ],
+      "step_count_max_seen": 38,
+      "max_steps_allowed": 42,
+      "step_all_ok": true
+    },
+    "1000000_0.5": {
+      "n": 1000000,
+      "f": 0.5,
+      "expected_lcp": 500000,
+      "hash_ms": {
+        "mean": 8.871100028045475,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          8.871100028045475
+        ]
+      },
+      "brute_ms": {
+        "mean": 12.525049969553947,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          12.525049969553947
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        38
+      ],
+      "step_count_max_seen": 38,
+      "max_steps_allowed": 42,
+      "step_all_ok": true
+    },
+    "1000000_0.99": {
+      "n": 1000000,
+      "f": 0.99,
+      "expected_lcp": 990000,
+      "hash_ms": {
+        "mean": 16.90424990374595,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          16.90424990374595
+        ]
+      },
+      "brute_ms": {
+        "mean": 23.195300018414855,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          23.195300018414855
+        ]
+      },
+      "correctness_all_ok": true,
+      "correctness_mismatches": 0,
+      "step_counts": [
+        40
+      ],
+      "step_count_max_seen": 40,
+      "max_steps_allowed": 42,
+      "step_all_ok": true
+    }
+  },
+  "scaling_slopes_loglog_f05": {
+    "hash_ms": -0.24310031333903742,
+    "brute_ms": 1.0079989696147074
+  },
+  "dedup_workload": {
+    "hit_rate": {
+      "mean": 0.9777777777777777,
+      "std": 0.0,
+      "n": 1,
+      "cv": 0.0,
+      "all": [
+        0.9777777777777777
+      ]
+    },
+    "per_pair_ms": {
+      "mean": 11.223522221876514,
+      "std": 0.0,
+      "n": 1,
+      "cv": 0.0,
+      "all": [
+        11.223522221876514
+      ]
+    },
+    "k": 10,
+    "prefix_len": 300000,
+    "pairs_total": 45
+  },
+  "promotion_criterion": {
+    "i_correctness": {
+      "pass": true,
+      "total_mismatches": 0,
+      "gate": "HARD"
+    },
+    "ii_step_count": {
+      "pass": true,
+      "violations": 0
+    },
+    "iii_wall_clock_scaling": {
+      "pass": true,
+      "hash_slope_loglog": -0.24310031333903742,
+      "max_slope": 0.3,
+      "reference": "O(log^2 N) predicts slope ~0.14 over 64KB-8MB; O(N) = 1.0; informal pilot showed ~flat"
+    },
+    "iv_brute_slope_descriptive": {
+      "brute_slope_loglog": 1.0079989696147074,
+      "expected": "[0.7, 1.3] (linear in LCP length at f=0.5)",
+      "gating": "descriptive / non-gating"
+    },
+    "v_mean_std_reported": true,
+    "verdict": "PASS",
+    "gates_note": "Verdict gates on (i) HARD, (ii), (iii) per LOGBOOK. (iv) descriptive; (v) format."
+  }
+}
