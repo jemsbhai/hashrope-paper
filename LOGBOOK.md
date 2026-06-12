@@ -1000,3 +1000,116 @@ edits and O(log²) prefix queries also gives O(log)-memory branching.
 - Tests: tests/test_memory.py
 - Bench: scripts/exp004_bench.py ; results experiments/exp_004_memory/results/
 - Figure: scripts/exp004_figure.py ; figures/exp004_memory_*.{png,pdf}
+
+
+---
+
+## EXP-006: RepeatNode O(log q) compression/throughput vs naïve materialization (claim T4)
+
+**Date:** 2026-06-12 (planned)
+**Researcher:** Muntaser Syed
+**Type:** computational
+**Status:** planned
+
+### Hypothesis
+`rope_repeat(unit, q, h)` creates exactly **1 new RepeatNode** with an O(log q)
+hash computation (Φ geometric accumulator), encoding q repetitions of an
+arbitrary unit in constant space. The naïve alternative — materializing
+`unit_bytes * q` as a flat rope — creates O(q · unit_len / leaf_size) leaves
+(each hashing its chunk) plus O(same) internal nodes: O(q) total nodes and
+O(q · unit_len) total hash work. Both represent the identical byte string with
+the identical polynomial hash.
+
+T4 is already SUPPORTED on theory (Φ doubling is O(log q) by construction).
+EXP-006 adds empirical data: measured node counts, construction time,
+and memory, confirming the asymptotic predictions on real workloads.
+
+### Independent variables
+- **Repetition count q:** {1, 10, 100, 1,000, 10,000} — at fixed unit = 4,096 B
+- **Unit size (bytes):** {128, 1,024, 4,096, 16,384} — at fixed q = 1,000
+- **Arm:** {repeat (`rope_repeat`), naïve (`build_fat_leaf_rope(unit_bytes * q)`)}
+- **Corpus seed:** {42, 43, 44}
+- **Unit content:** deterministic corpus slice `corpus[i*unit_size : (i+1)*unit_size]`
+  (real content, not synthetic)
+
+### Dependent variables / metrics
+- **Correctness (HARD gate, boolean):**
+  (a) `rope_to_bytes(repeat) == rope_to_bytes(naive) == unit_bytes * q`, and
+  (b) `rope_hash(repeat) == rope_hash(naive)`.
+  0 mismatches.
+- **Node-count guard:** repeat arm = unit_nodes + 1 (the RepeatNode itself).
+  Naïve arm = reported (expected ~2 · ceil(q · unit_len / 4096)).
+  **Compression ratio** = naive_nodes / repeat_nodes.
+- **Construction time (ms):** wall-clock for `rope_repeat(unit, q, h)` vs
+  `build_fat_leaf_rope(unit_bytes * q, h)`. Warm, reps=5 → median per
+  invocation; mean ± std across n=9 runs.
+- **Construction-time log-log slope vs q** (q-sweep, primary): repeat should
+  be ≪ 1 (O(log q) predicts ~0.08 over 1–10000); naïve ∈ [0.7, 1.3].
+- **tracemalloc delta (bytes):** memory allocated for each arm.
+- **Memory compression ratio:** naive_delta / repeat_delta.
+
+### Control conditions
+- Same unit content (corpus slice) for both arms at each (q, seed)
+- Real corpus (not `"A"*N`)
+- Both arms produce the same byte string and hash — verified per cell
+- Fresh subprocess per (seed, invocation)
+- Warmup discarded; reps=5 within each invocation (median stabilizes the
+  point estimate; error bar = std across 9 runs)
+- For large q naïve cells (q=10000, unit=16KB = 160 MB materialization):
+  skip if corpus too short or would exceed memory; report honestly
+
+### Protocol (TDD, red-first)
+1. `src/repeat_bench.py`: `build_naive_repeat(unit_bytes, q, h)` — build
+   `build_fat_leaf_rope(unit_bytes * q, h)`. `build_repeat(unit_rope, q, h)`
+   — `rope_repeat(unit_rope, q, h)`. Plus `count_unique_nodes` reused from
+   `src/memory.py`.
+2. `tests/test_repeat.py` (red-first):
+   - `test_repeat_correctness`: bytes + hash identity (RED at stub)
+   - `test_repeat_node_count`: repeat = unit_nodes + 1 (RED at stub)
+   - `test_naive_node_count`: naïve > q for large q (RED at stub)
+   - `test_repeat_faster`: repeat construction < naïve (RED at stub)
+3. `scripts/exp006_bench.py`: orchestrator + worker. Worker: q-sweep + unit-
+   sweep, both arms, correctness + node count + timing + tracemalloc. Write
+   JSON. Orchestrator: 3 seeds × 3 inv, aggregate, evaluate criterion.
+4. `scripts/exp006_figure.py`: (a) construction time vs q (log-log, both
+   arms); (b) node-count compression ratio vs q. Save .png + .pdf.
+5. Record results, evaluate criterion, update CLAIMS.md + PROGRAM.md, commit.
+
+### Environment
+- **Hardware:** laptop, Intel i9-14900HX, 64 GB RAM, RTX 4090 (idle)
+- **Software:** Windows 11 (10.0.26200), Python 3.12.2, hashrope 0.2.2
+- **Git commit:** [fill: clean SHA, committed bench script BEFORE run]
+- **Seeds:** corpus {42, 43, 44}
+
+### Promotion criterion (verbatim, written before any data)
+T4 evidence row updated with empirical data iff, across ≥3 corpus seeds ×
+≥3 invocations (n ≥ 9):
+
+(i)   **[HARD] Correctness:** `rope_to_bytes` and `rope_hash` match between
+      repeat and naïve arms for every (q, unit_size, seed) tested — 0
+      mismatches.
+(ii)  **Node-count guard:** repeat arm = unit_nodes + 1 at every q. Naïve arm
+      ≥ q (for q ≥ 10, unit ≥ 4 KB). Compression ratio ≥ 100× at
+      (q=10000, unit=4KB).
+(iii) **Construction-time scaling:** log-log slope of repeat construction
+      time vs q (q-sweep, unit=4KB) ≤ 0.3. Naïve slope ∈ [0.7, 1.3].
+(iv)  All numbers reported as mean ± std across runs (n ≥ 9).
+
+Failure of (i) → experiment FAILS outright. Failure of (ii)/(iii) →
+investigate (no retrofit). T4 stays SUPPORTED on theory regardless (the
+failure would be in the benchmark, not the algorithm).
+
+### Results
+[To be filled after run]
+
+### Observations
+[To be filled after run]
+
+### Interpretation
+[To be filled after run]
+
+### Artifacts
+- Implementation: src/repeat_bench.py
+- Tests: tests/test_repeat.py
+- Bench: scripts/exp006_bench.py ; results experiments/exp_006_repeat/results/
+- Figure: scripts/exp006_figure.py ; figures/exp006_repeat_*.{png,pdf}
