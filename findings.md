@@ -62,6 +62,25 @@ O(log² N) without materializing or scanning the full text, enabling prefix-dedu
 reuse. _Confirmatory (EXP-005). Absolute latency is Python-amplified; the transferable claim is
 the O(log² N) step count (guard-proven), with a smaller constant in Rust._
 
+### Branch/snapshot in O(B · log N) memory (M1; EXP-004, CONFIRMATORY)
+
+Forking a rope context for Tree-of-Thought branching costs **O(log w) new nodes per fork** (the
+spine from root to the new leaf), with all other nodes structurally shared via immutability
+(Invariant I9). The node-count guard is **perfectly deterministic** (std=0 across all 9 runs):
+at (N=2M, B=50) the rope arm uses 1,477 unique objects vs 49,927 for deep copies (33.8× sharing
+ratio); per-fork new nodes ≈ 10 ≈ ⌈log₂ 489⌉, exactly matching the O(log w) prediction.
+
+In actual memory (tracemalloc), the compression ratio grows with context size: 6.3× at 64 KB →
+50.9× at 2 MB → **168.6× at 8 MB** (B=50). At the largest cell (N=8M, B=100), rope forks consume
+159 KB vs 25.8 MB for deep copies: **166×** compression with std=0.05 (near-deterministic). The
+per-fork rope memory is essentially constant from 1M to 8M (~1.3–1.6 KB/fork; log-log slope
+**0.183**), while deep-copy per-fork memory scales linearly (slope **0.884**).
+
+Fork creation time is a bonus result: ~0.037 ms for rope (constant in N) vs 4–17 ms for deepcopy
+(linear), yielding **114–454×** speedup. The prior draft’s O(1) memory claim was incorrect; the
+honest O(B · log N) is supported, with no library change required. _Confirmatory (EXP-004).
+Node-count guard is a mathematical proof (deterministic), not a statistical estimate._
+
 ---
 
 ## Raw Findings Log
@@ -208,3 +227,25 @@ Python-amplified; the transferable claim is the O(log² N) step count (guard-pro
 smaller constant in Rust. This is the **content-identity query** side of the unification thesis:
 the same persistent rope that provides O(log) edits answers “how much prefix do these two
 contexts share?” in O(log² N). EXP-005 closed.
+
+### 2026-06-12 — EXP-004: Branch/snapshot memory under ToT branching (CONFIRMATORY)
+
+**Key result:** Hashrope's immutable structural sharing gives **O(B · log N) incremental memory**
+for B ToT-style forks at context size N, vs O(B · N) for deep copies. Node-count guard is
+**perfectly deterministic** (std=0 across all 9 runs). At (N=8M, B=100): rope 159 KB vs deepcopy
+25.8 MB = **166×** compression. Prior O(1) claim retracted; O(B · log N) supported.
+
+**Promotion:** M1 REFRAMED → **SUPPORTED**.
+
+**Details (n=9, mean ± std):** Node sharing ratio: 6.0× (64K) → 33.8× (2M) → 44.7× (8M) at B=50;
+78.9× at (8M, B=100). Per-fork rope memory: 691 B (64K) → 1,630 B (8M) — essentially constant;
+log-log slope 0.183. Deepcopy per-fork: 4.4 KB → 275 KB; slope 0.884 (linear). tracemalloc
+compression: 6.3× (64K) → 168.6× (8M) at B=50. Fork timing (descriptive): rope 0.037 ms
+(constant), deepcopy 4–17 ms (linear), 114–454× speedup. Byte-identity 0 mismatches. Commit
+a19a4c7, corpus SHA-256[:16] 42=fda6a43a, 43=85ca5870, 44=dfd645be.
+
+**Notes:** Node counts are deterministic because structural sharing is a mathematical property of
+the immutable tree, not a statistical measurement — the experiment is effectively a proof.
+tracemalloc std <0.1% relative (memory allocation is near-deterministic for frozen dataclasses).
+Compression ratio grows with N (the O(log N) vs O(N) gap widens) and converges at large B
+(both arms scale linearly in B). No library change required. EXP-004 closed.

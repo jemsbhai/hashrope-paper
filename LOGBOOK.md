@@ -757,3 +757,246 @@ scaling shape; the absolute latency will be lower in production (Rust).
 - Tests: tests/test_lcp.py
 - Bench: scripts/exp005_bench.py ; results experiments/exp_005_lcp/results/
 - Figure: scripts/exp005_figure.py ; figures/exp005_lcp_latency.{png,pdf}, figures/exp005_lcp_steps.{png,pdf}
+
+
+---
+
+## EXP-004: Branch/snapshot — peak memory under ToT branching (claim M1)
+
+**Date:** 2026-06-11 (planned)
+**Researcher:** Muntaser Syed
+**Type:** computational
+**Status:** planned
+
+### Hypothesis
+Hashrope's immutable structural sharing (Invariant I9) makes forking a context
+O(1) and each subsequent edit O(log w) new nodes, yielding **O(B · log N)**
+incremental memory for B forks of an N-byte context — vs O(B · N) for independent
+deep copies. The prior draft claimed O(1); the honest claim is O(B · log N), which
+is still a strong result (the prior data showed 486 MB → 0.40 MB at 50 forks / 10M
+chars, a >1000× compression).
+
+This directly addresses claim **M1** (currently REFRAMED). The experiment measures
+actual memory (via `tracemalloc`) and proves structural sharing via a node-identity
+guard (counting unique `id()` values across forks).
+
+### Background / recon (2026-06-11)
+All node types (`Leaf`, `Internal`, `RepeatNode`) are
+`@dataclass(frozen=True, slots=True)` — genuinely immutable. "Forking" = binding
+another reference to the same root. Editing = `rope_split` + `rope_concat`, which
+creates O(log w) new Internal nodes along the path; untouched subtrees are shared.
+`copy.deepcopy` recursively copies every node including leaf `data` bytes — O(N)
+per fork.
+
+For an N-byte rope with 4 KB leaves: w ≈ N/4096 leaves, total nodes ≈ 2w − 1.
+Each append-fork creates ~⌈log₂ w⌉ + 1 new nodes (new Internal spine from root to
+the rightmost leaf, plus the new thought Leaf). Unique nodes across B forks (rope):
+≈ (2w − 1) + B · (⌈log₂ w⌉ + 2). Deepcopy: ≈ B · (2w − 1) + small. At N = 8M,
+w ≈ 2000: rope ~4000 + B·13 vs deepcopy ~B·4000 — node-count ratio ≈ w / log w
+≈ 180× at large B.
+
+### Independent variables
+- **Fork count B:** {1, 2, 5, 10, 25, 50, 100} — at fixed N = 2,000,000
+- **Context size N:** {64,000; 256,000; 1,000,000; 2,000,000; 4,000,000;
+  8,000,000} — at fixed B = 50
+- **Arm:** {rope (structural sharing via reference + `rope_concat`), deepcopy
+  (`copy.deepcopy` + same `rope_concat`)}
+- **Corpus seed:** {42, 43, 44}
+- **Thought size:** fixed 128 bytes (deterministic corpus slices:
+  `corpus[N + i*128 : N + (i+1)*128]` for fork i)
+
+### Dependent variables / metrics
+- **Correctness (HARD gate, boolean):** `rope_to_bytes(fork_i) == base_bytes +
+  thought_i_bytes` for every fork, both arms, 0 mismatches.
+- **Unique node count (structural guard):** tree-walk all B forks + base rope,
+  collect unique `id()`. Rope arm should have ≈ (2w−1) + B·(⌈log₂ w⌉ + 2);
+  deepcopy arm ≈ B·(2w−1) + B·(⌈log₂ w⌉ + 2). **Sharing ratio** = deepcopy_unique
+  / rope_unique.
+- **tracemalloc delta (bytes):** snapshot before forks, snapshot after all B forks
+  created (all fork references held live). Report total delta and per-fork
+  incremental (delta / B).
+- **Compression ratio:** deepcopy_delta / rope_delta.
+- **Per-fork time (descriptive, non-gating):** wall-clock for creating one fork
+  (rope_concat vs deepcopy + rope_concat), median across forks.
+- **Log-log slope:** per-fork tracemalloc incremental vs N (at fixed B=50); rope
+  should be ≪ 1; deepcopy should be ~1.0.
+
+### Control conditions
+- Same base rope, same thought bytes, same builder (`build_fat_leaf_rope` from
+  `src/flatten.py`)
+- Real corpus (not `"A"*N`)
+- Both arms create the same logical content — only the memory representation
+  differs
+- Fresh subprocess per (seed, invocation)
+- tracemalloc started fresh per arm per subprocess (no cross-contamination)
+
+### Protocol (TDD, red-first)
+1. `src/memory.py`: `count_unique_nodes(roots: list[Node]) -> dict` — tree-walk,
+   return `{total_reachable, unique_ids, by_type}`. `fork_rope(base, thoughts, h)`
+   and `fork_deepcopy(base, thoughts, h)` — return list of fork roots.
+2. `tests/test_memory.py` (red-first):
+   - `test_fork_byte_identity`: every fork materializes correctly (RED at stub)
+   - `test_rope_shares_nodes`: after B rope-forks, unique node count <
+     B × base_nodes (RED at stub, GREEN when sharing is real)
+   - `test_deepcopy_no_sharing`: after B deepcopy-forks, unique node count ≈
+     B × base_nodes (every node duplicated)
+   - `test_tracemalloc_rope_smaller`: rope delta < deepcopy delta (RED at stub)
+3. `scripts/exp004_bench.py`: orchestrator + worker. Worker: build base rope, run
+   both arms (tracemalloc + node count + correctness), write JSON. Orchestrator:
+   3 seeds × 3 invocations, aggregate, evaluate criterion.
+4. `scripts/exp004_figure.py`: (a) per-fork memory vs N (log-log, both arms,
+   fitted slopes); (b) compression ratio vs B. Save .png (300 dpi) + .pdf to
+   `figures/`.
+5. Record results, evaluate criterion verbatim, update CLAIMS.md + PROGRAM.md,
+   commit.
+
+### Environment
+- **Hardware:** laptop, Intel i9-14900HX, 64 GB RAM, RTX 4090 (idle)
+- **Software:** Windows 11 (10.0.26200), Python 3.12.2, hashrope 0.2.2
+- **Git commit:** [fill: clean SHA, committed bench script BEFORE confirmatory run]
+- **Seeds:** corpus {42, 43, 44}
+
+### Promotion criterion (verbatim, written before any data)
+M1 → **SUPPORTED** iff, across ≥3 corpus seeds × ≥3 invocations (n ≥ 9):
+
+(i)   **[HARD] Byte-identity:** every fork materializes to the expected content
+      (base_bytes + thought_bytes), 0 mismatches across all (N, B, seed, arm)
+      cells.
+(ii)  **Structural sharing guard:** at (N=2M, B=50), rope-arm unique node count ≤
+      (2 · w_base) + B · (⌈log₂ w_base⌉ + 3) — i.e., base tree nodes +
+      O(B · log w) new nodes. Deepcopy-arm unique node count ≥ B · w_base (no
+      sharing). **Sharing ratio** (deepcopy_unique / rope_unique) ≥ 10×.
+(iii) **Memory:** at (N=8M, B=100), compression ratio (deepcopy tracemalloc delta
+      / rope tracemalloc delta) ≥ 50×.
+(iv)  **Scaling (descriptive, non-gating):** log-log slope of per-fork rope
+      tracemalloc delta vs N (B=50 sweep) ≤ 0.3. Deepcopy slope ∈ [0.7, 1.3]
+      (linear).
+(v)   All numbers reported as mean ± std across runs (n ≥ 9); within-run CI
+      retired.
+
+Failure of (i) → experiment FAILS outright. Failure of (ii)/(iii) → M1 stays
+REFRAMED, investigate. (iv) is descriptive.
+
+**Honesty note:** The claim is O(B · log N) *incremental* new nodes/memory per
+edit-fork, not O(1). The compression ratio is impressive at large N but comes
+from the asymptotic gap (log N vs N), so it grows with context size — the paper
+reports it as a function of N, not a fixed constant. The per-fork timing is
+secondary and reported descriptively.
+
+### Results
+
+Confirmatory run 2026-06-12, n=9 (3 seeds × 3 invocations), commit a19a4c7,
+hashrope 0.2.2, real corpus. Git dirty=True (untracked result JSONs only).
+Corpus SHA-256[:16] 42=fda6a43a, 43=85ca5870, 44=dfd645be.
+
+**Node counts (DETERMINISTIC — std=0 across all 9 runs):**
+
+| N | B | rope unique | dc unique | sharing ratio |
+|---|---|---|---|---|
+| 64K | 50 | 281 | 1,681 | 6.0× |
+| 256K | 50 | 475 | 6,475 | 13.6× |
+| 1M | 50 | 939 | 25,039 | 26.7× |
+| 2M | 50 | 1,477 | 49,927 | **33.8×** |
+| 4M | 50 | 2,503 | 99,703 | 39.8× |
+| 8M | 50 | 4,457 | 199,357 | 44.7× |
+| 8M | 100 | 5,007 | 394,807 | **78.9×** |
+
+Per-fork new nodes (rope, at B=50): (base_unique + fork_unique − base) / B ≈ 10
+nodes at N=2M (log₂(489) ≈ 9, matching O(log w)).
+
+**B-sweep at N=2M (tracemalloc, mean ± std, n=9):**
+
+| B | rope KB | dc KB | compression | rope per-fork B | dc per-fork KB |
+|---|---|---|---|---|---|
+| 1 | 1.8 ± 0 | 165 ± 0 | 90.9× | 1,855 | 169K |
+| 5 | 7.2 ± 0 | 333 ± 0 | 46.2× | 1,478 | 68K |
+| 10 | 14.1 ± 0 | 1,053 ± 0 | 74.7× | 1,442 | 108K |
+| 25 | 34.8 ± 0 | 1,935 ± 0 | 55.5× | 1,427 | 79K |
+| 50 | 69.5 ± 0 | 3,539 ± 0 | **50.9×** | 1,423 | 72K |
+| 100 | 138.9 ± 0 | 6,966 ± 0 | **50.2×** | 1,422 | 71K |
+
+**N-sweep at B=50 (tracemalloc per-fork, mean):**
+
+| N | rope per-fork B | dc per-fork B | compression |
+|---|---|---|---|
+| 64K | 691 | 4,370 | 6.3× |
+| 256K | 974 | 9,202 | 9.4× |
+| 1M | 1,256 | 35,156 | 28.0× |
+| 2M | 1,423 | 72,477 | 50.9× |
+| 4M | 1,597 | 141,846 | 88.8× |
+| 8M | 1,630 | 274,751 | **168.6×** |
+
+Log-log slopes: rope **0.183**, deepcopy **0.884**.
+
+**Timing (descriptive, per-fork median, mean across runs):**
+
+| N | rope ms | deepcopy ms | speedup |
+|---|---|---|---|
+| 2M | 0.037 | 4.2 | ~114× |
+| 8M | 0.037 | 16.8 | ~454× |
+
+**Criterion (N=8M, B=100):** rope 159 KB vs deepcopy 25.8 MB = **166.2× ± 0.05**.
+
+**Promotion criterion evaluation (verbatim):**
+- (i) [HARD] Byte-identity: **PASS** — 0 mismatches across all cells.
+- (ii) Sharing guard (N=2M,B=50): **PASS** — rope 1,477 ≤ max 1,578;
+  sharing ratio 33.8× ≥ 10×.
+- (iii) Memory (N=8M,B=100): **PASS** — compression 166.2× ≥ 50×.
+- (iv) Scaling (descriptive): rope slope 0.183 ≤ 0.3; dc slope 0.884 ∈ [0.7,1.3].
+- **VERDICT: PASS → M1 SUPPORTED.**
+
+### Observations
+
+1. **Node counts are perfectly deterministic** — std=0 across all 9 runs for
+   every cell. This is the strongest possible guard: structural sharing is a
+   mathematical property of the immutable tree, not a statistical measurement.
+   The experiment is effectively a proof, not a measurement with uncertainty.
+
+2. **Per-fork rope memory is essentially constant** from 1M to 8M: ~1,256→1,630
+   bytes/fork. The log-log slope 0.183 captures the slow O(log w) growth.
+   Deepcopy per-fork memory scales linearly (0.884) as expected.
+
+3. **Compression ratio grows with N** (the asymptotic gap widens): 6.3× at 64K
+   → 168.6× at 8M (B=50). At fixed N, it stabilizes as B grows (50.9× at
+   B=50 vs 50.2× at B=100 for N=2M) — because both arms scale linearly in B,
+   so the ratio converges to base_size / per_fork_new ≈ N/log(N).
+
+4. **Fork timing** is a bonus result: rope fork ~0.037 ms (constant in N — just
+   O(log w) node creation), deepcopy 4–17 ms (linear in N — copies all data).
+   At 8M this is **454×** faster. Not pre-registered as a gating criterion but
+   supports the "zero-cost forking" narrative.
+
+5. **tracemalloc std is <0.1% relative** — memory allocation is near-deterministic
+   for these pure-Python frozen dataclasses. The cross-run error model (designed
+   for timing variance) is conservative here, which is fine.
+
+6. **No library change required.** Structural sharing is the default behavior of
+   the immutable rope — the user just holds another reference to the root.
+
+### Interpretation
+
+M1 moves from REFRAMED to **SUPPORTED**. The honest claim: hashrope's immutable
+rope provides **O(B · log N) incremental memory** for B ToT-style branches at
+context size N, vs O(B · N) for deep copies. At (N=8M, B=100) this is a **166×**
+compression in actual measured memory, and **79×** in unique objects — both
+guard-proven to be deterministic properties of the tree structure, not statistical
+estimates.
+
+The prior draft's O(1) claim was incorrect (memory does grow with B, at O(log N)
+per fork), but the corrected O(B · log N) is a strong result: it means an LLM
+serving system can maintain 100 concurrent ToT branches at 8M-character contexts
+for ~159 KB total rope overhead instead of ~25.8 MB of full copies. Fork creation
+itself is O(log w) time (~0.037 ms), vs O(N) for deepcopy (~17 ms at 8M).
+
+The result is a pure consequence of immutability (Invariant I9) + structural
+sharing — no special optimization or code path. This is the **branch/snapshot**
+leg of the unification thesis: the same persistent structure that gives O(log)
+edits and O(log²) prefix queries also gives O(log)-memory branching.
+
+**EXP-004 is closed.**
+
+### Artifacts
+- Implementation: src/memory.py
+- Tests: tests/test_memory.py
+- Bench: scripts/exp004_bench.py ; results experiments/exp_004_memory/results/
+- Figure: scripts/exp004_figure.py ; figures/exp004_memory_*.{png,pdf}

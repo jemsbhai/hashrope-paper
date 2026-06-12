@@ -43,7 +43,7 @@ experiment's kickoff, before any code runs.
 
 | ID | Claim | Status | Evidence / Notes |
 |----|-------|--------|------------------|
-| M1 | Structural sharing yields sub-linear peak memory under branching | REFRAMED | Prior draft said **O(1)** peak memory under ToT branching. Own data (`3_macro_memory_ram_mb.csv`) shows growth with branch count B (0.021→0.396 MB). Honest claim: **O(B·log N) incremental**, vs O(N·B) deep-copy. Still a strong result (486MB→0.40MB @50 forks/10M chars); just not O(1). |
+| M1 | Structural sharing yields O(B · log N) incremental memory under branching | SUPPORTED | **EXP-004 (2026-06-12, commit a19a4c7), confirmatory n=9 (3 seeds × 3 invocations), real corpus, hashrope 0.2.2.** Node-count guard (DETERMINISTIC, std=0): rope forks share interior nodes — at (N=2M, B=50) 1,477 unique nodes vs deepcopy 49,927 (33.8× sharing ratio). Per-fork new nodes ≈ 10 = O(log w), matching ⌈log₂ 489⌉=9. tracemalloc: at (N=8M, B=100) rope 159 KB vs deepcopy 25.8 MB = **166×** compression (±0.05 std). Log-log slope of per-fork memory vs N: rope **0.183** (O(log N)), deepcopy **0.884** (O(N)). Fork time: rope 0.037 ms, deepcopy 17 ms (454×). Byte-identity 0 mismatches. Prior draft’s O(1) claim retracted; honest O(B · log N) is the supported claim. |
 
 ## Latency / throughput claims
 
