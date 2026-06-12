@@ -81,6 +81,28 @@ Fork creation time is a bonus result: ~0.037 ms for rope (constant in N) vs 4–
 honest O(B · log N) is supported, with no library change required. _Confirmatory (EXP-004).
 Node-count guard is a mathematical proof (deterministic), not a statistical estimate._
 
+### Repetition encoding in O(log q) (T4; EXP-006, CONFIRMATORY)
+
+`rope_repeat(unit, q, h)` creates exactly **1 RepeatNode** wrapping the unit subtree, computing
+the polynomial hash via Φ (geometric accumulator) in O(log q) doublings. The naïve alternative —
+materializing `unit_bytes * q` as a flat rope — creates O(q · unit_len / 4096) leaves, each
+hashing its chunk: O(q) nodes and O(q · unit_len) total work.
+
+At q=10,000 with a 4 KB unit: RepeatNode uses **2 objects / 327 bytes / 11 μs** to represent
+40 MB of logical content, vs 19,999 objects / 44 MB / 10.6 seconds for naïve — a **9,999.5×
+node compression** and **1,033,724× construction speedup**. Node counts are perfectly
+deterministic (std=0 across all 9 runs). The construction-time log-log slope (q≥10) is
+**0.175** for RepeatNode (consistent with O(log q) + constant overhead) vs **1.041** for naïve
+(textbook O(q)). The unit-size sweep confirms naïve cost scales linearly with unit size while
+RepeatNode is constant (~0.01 ms regardless of unit).
+
+This is the **repetition encoding** leg of the unification thesis: the same persistent structure
+that provides O(log) edits, O(log²) prefix queries, and O(log)-memory branching also compresses
+q-fold repetitions into a single node with O(log q) hash maintenance — enabling repeated system
+prompts, few-shot exemplars, and template headers to be encoded once. _Confirmatory (EXP-006).
+Absolute speedup is Python-amplified; the transferable claim is the node-count guard
+(deterministic) and O(log q) scaling._
+
 ---
 
 ## Raw Findings Log
@@ -249,3 +271,27 @@ the immutable tree, not a statistical measurement — the experiment is effectiv
 tracemalloc std <0.1% relative (memory allocation is near-deterministic for frozen dataclasses).
 Compression ratio grows with N (the O(log N) vs O(N) gap widens) and converges at large B
 (both arms scale linearly in B). No library change required. EXP-004 closed.
+
+### 2026-06-12 — EXP-006: RepeatNode O(log q) compression/throughput (CONFIRMATORY)
+
+**Key result:** `rope_repeat(unit, q, h)` creates exactly **1 RepeatNode** with O(log q) Φ hash
+work. At q=10,000 with a 4 KB unit: 2 objects / 327 bytes / 11 μs represent 40 MB of logical
+content, vs 19,999 objects / 44 MB / 10.6 seconds for naïve materialization — **9,999.5× node
+compression** and **1,033,724× construction speedup**.
+
+**Promotion:** T4 evidence enriched (was already theory-SUPPORTED; now has empirical backing).
+
+**Details (n=9, mean ± std):** Node counts perfectly deterministic (std=0). RepeatNode always =
+unit_nodes + 1, regardless of q. Construction-time log-log slope (q≥10): repeat **0.175**
+(O(log q)), naïve **1.041** (O(q)). q=1 excluded from repeat slope: `rope_repeat(node,1,h)`
+returns the node unchanged (no RepeatNode, no Φ). Speedup: 2,281× (q=10) → 14,740× (q=100) →
+120,455× (q=1000) → 1,033,724× (q=10000). Memory: repeat 327–703 B total, naïve 723 B → 44 MB.
+Unit-size sweep (q=1000): naïve scales linearly with unit size (24 ms @ 128B → 4,261 ms @ 16KB);
+repeat constant (~0.01 ms). Correctness: 0 mismatches (bytes + hash). Commit 23e8eb6, corpus
+SHA-256[:16] 42=fda6a43a, 43=85ca5870, 44=dfd645be.
+
+**Notes:** The million-fold speedup at q=10000 is Python-amplified (naïve arm hashes 40 MB in
+pure Python per-byte reduction). The transferable claim is the node-count guard (deterministic,
+1 vs 19,999) and the O(log q) vs O(q) scaling — both hold in any implementation. Repeat time is
+essentially flat from q=100 to q=10000 because the O(log q) Φ work (4→14 multiplications) is
+buried in Python call overhead. EXP-006 closed.

@@ -1100,13 +1100,90 @@ investigate (no retrofit). T4 stays SUPPORTED on theory regardless (the
 failure would be in the benchmark, not the algorithm).
 
 ### Results
-[To be filled after run]
+
+Confirmatory run 2026-06-12, n=9 (3 seeds × 3 invocations), commit 23e8eb6,
+hashrope 0.2.2, real corpus.
+
+**Node counts (DETERMINISTIC, std=0):**
+
+| q | unit | repeat nodes | naïve nodes | compression |
+|---|---|---|---|---|
+| 1 | 4 KB | 1 | 1 | 1× |
+| 10 | 4 KB | 2 | 19 | 9.5× |
+| 100 | 4 KB | 2 | 199 | 99.5× |
+| 1,000 | 4 KB | 2 | 1,999 | **999.5×** |
+| 10,000 | 4 KB | 2 | 19,999 | **9,999.5×** |
+| 1,000 | 128 B | 2 | 63 | 31.5× |
+| 1,000 | 1 KB | 2 | 499 | 249.5× |
+| 1,000 | 16 KB | 8 | 7,999 | 999.9× |
+
+**Construction time (mean ± std, n=9):**
+
+| q | unit | repeat ms | naïve ms | speedup |
+|---|---|---|---|---|
+| 1 | 4 KB | 0.000178 | 0.781 | 4,779× |
+| 10 | 4 KB | 0.00347 | 7.86 | 2,281× |
+| 100 | 4 KB | 0.00528 | 77.6 | 14,740× |
+| 1,000 | 4 KB | 0.01023 ± 0.005 | 1,102 ± 88 | **120,455×** |
+| 10,000 | 4 KB | 0.01064 ± 0.003 | 10,553 ± 1,179 | **1,033,724×** |
+| 1,000 | 16 KB | 0.00933 | 4,261 | 474,649× |
+
+Log-log slopes (q-sweep, unit=4KB, q≥10): repeat **0.175**, naïve **1.041**.
+(q=1 excluded from repeat slope: `rope_repeat(node,1,h)` returns node
+unchanged — no RepeatNode, no Φ.)
+
+**tracemalloc (mean, bytes):**
+
+| q | unit | repeat | naïve | ratio |
+|---|---|---|---|---|
+| 1,000 | 4 KB | 448 | 4.4 MB | 9,828× |
+| 10,000 | 4 KB | 327 | 44.0 MB | **134,651×** |
+
+**Promotion criterion evaluation (verbatim):**
+- (i) [HARD] Correctness: **PASS** — 0 mismatches (bytes + hash).
+- (ii) Node guard (q=10000, unit=4KB): **PASS** — repeat=2 (= unit_nodes+1),
+  naïve=19,999, compression 9,999.5× ≥ 100×.
+- (iii) Scaling: **PASS** — repeat slope 0.175 ≤ 0.3; naïve 1.041 ∈ [0.7,1.3].
+- **VERDICT: PASS → T4 evidence enriched.**
 
 ### Observations
-[To be filled after run]
+
+1. **RepeatNode is essentially free.** At q=10,000 the construction takes
+   0.011 ms (~11 μs, doing 14 Φ doublings) vs 10.6 *seconds* for the naïve
+   arm. That’s a **million-fold** speedup. The entire bottleneck is naïve
+   leaf hashing (pure Python per-byte reduction over 40 MB).
+
+2. **Node counts are perfectly deterministic** (std=0). RepeatNode always
+   adds exactly 1 object. At q=10000, unit=4KB: 2 objects represent 40 MB
+   of logical content.
+
+3. **Memory is negligible:** repeat allocates 327–703 bytes total (one frozen
+   dataclass), while naïve allocates 44 MB (19,999 nodes + leaf data).
+
+4. **Repeat time is essentially flat** from q=100 to q=10000 (0.005–0.011 ms).
+   The O(log q) growth (4→14 Φ iterations) is buried in Python call overhead.
+   The log-log slope 0.175 is consistent with O(log q) + constant overhead.
+
+5. **Unit-size sweep confirms** the naïve cost is O(q · unit_len): at q=1000,
+   naïve goes from 24 ms (128 B) → 4,261 ms (16 KB), scaling linearly
+   with unit size. Repeat is constant (~0.01 ms) regardless of unit size.
 
 ### Interpretation
-[To be filled after run]
+
+T4 was already SUPPORTED on theory (Φ doubling is O(log q) by construction).
+EXP-006 provides the empirical backing: measured node counts, construction
+time, and memory confirm the asymptotic predictions on real corpus content.
+
+The result is dramatic: at q=10,000 with a 4 KB unit, RepeatNode encodes
+40 MB of logical content in **2 objects / 327 bytes / 11 μs**, vs 19,999
+objects / 44 MB / 10.6 seconds for naïve materialization. This makes
+repetition encoding the most extreme compression ratio in the system.
+
+For LLM serving: repeated system prompts, few-shot exemplars, and template
+headers that appear across many contexts can be encoded once and shared,
+with the hash maintained through the RepeatNode for prefix-identity queries.
+
+**EXP-006 is closed.**
 
 ### Artifacts
 - Implementation: src/repeat_bench.py

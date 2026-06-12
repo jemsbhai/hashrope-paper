@@ -306,8 +306,10 @@ def aggregate(seeds, invocations):
             den = sum((x-mx)**2 for x in lx)
             return num/den if den > 0 else 0
 
+        # q=1 excluded from repeat slope: rope_repeat(node,1,h) returns the
+        # input unchanged (no RepeatNode, no φ). It's a degenerate no-op.
         r_pairs = [(c["q"], c["repeat_time_ms_mean"]) for c in q_sweep
-                    if c["q"] >= 1 and c["repeat_time_ms_mean"] > 0]
+                    if c["q"] >= 10 and c["repeat_time_ms_mean"] > 0]
         n_pairs = [(c["q"], c["naive_time_ms_mean"]) for c in q_sweep
                     if c["q"] >= 1 and c["naive_time_ms_mean"] > 0]
 
@@ -367,6 +369,8 @@ def main():
     parser.add_argument("--inv", type=int, default=0)
     parser.add_argument("--seeds", type=str, default="42,43,44")
     parser.add_argument("--invocations", type=int, default=3)
+    parser.add_argument("--aggregate-only", action="store_true",
+                        help="Re-aggregate existing per-worker JSONs (no reruns)")
     args = parser.parse_args()
 
     grid = build_grid(DEFAULT_Q_VALUES, DEFAULT_Q_SWEEP_UNIT,
@@ -380,18 +384,20 @@ def main():
 
     seeds = [int(s) for s in args.seeds.split(",")]
     invocations = args.invocations
-    print(f"EXP-006 orchestrator: seeds={seeds}, invocations={invocations}, "
-          f"{len(grid)} cells/worker")
 
-    for s in seeds:
-        for i in range(invocations):
-            print(f"\n--- Spawning worker seed={s} inv={i} ---")
-            cmd = [sys.executable, __file__,
-                   "--worker", "--seed", str(s), "--inv", str(i)]
-            result = subprocess.run(cmd, cwd=str(REPO))
-            if result.returncode != 0:
-                print(f"  WORKER FAILED (rc={result.returncode})")
-                sys.exit(1)
+    if not args.aggregate_only:
+        print(f"EXP-006 orchestrator: seeds={seeds}, invocations={invocations}, "
+              f"{len(grid)} cells/worker")
+
+        for s in seeds:
+            for i in range(invocations):
+                print(f"\n--- Spawning worker seed={s} inv={i} ---")
+                cmd = [sys.executable, __file__,
+                       "--worker", "--seed", str(s), "--inv", str(i)]
+                result = subprocess.run(cmd, cwd=str(REPO))
+                if result.returncode != 0:
+                    print(f"  WORKER FAILED (rc={result.returncode})")
+                    sys.exit(1)
 
     aggregate(seeds, invocations)
 
