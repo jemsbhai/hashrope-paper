@@ -9,7 +9,7 @@ This ledger is maintained in lockstep with the paper. A claim cannot move to
 `SUPPORTED` on assertion; it requires a logbook entry, a results file, and (for
 comparative claims) a baseline and uncertainty bound.
 
-The forward-looking experimental program (EXP-002 … EXP-016) — each experiment
+The forward-looking experimental program (EXP-002 … EXP-018) — each experiment
 mapped to the claim(s) it earns, with mode, hardware, status, and sequencing — is
 registered in `PROGRAM.md`. Full per-experiment plans (hypothesis, IVs/DVs,
 protocol, verbatim promotion criterion) are written into `LOGBOOK.md` at each
@@ -64,6 +64,18 @@ experiment's kickoff, before any code runs.
 | S4 | The prior flatten "tax" is an implementation artifact (midpoint re-splitting → Θ(#leaves) `Leaf` re-allocations re-hashing Θ(N) bytes), **not** an inherent serialization cost; in-order materialization (`rope_to_bytes`) eliminates it with **0** splits / **0** re-allocs / **0** hash recomputations | SUPPORTED | **EXP-002 (2026-06-11, commit 47ea627), confirmatory n=9 (3 seeds × 3 invocations), real corpus, hashrope 0.2.2.** Op-count guard: fixed `rope_to_bytes` = 0/0/0 at every size; broken midpoint-resplit = Θ(#leaves) (2M 1022 allocs/511 splits/1022 hashes; 8M 4092/2047/4092), re-hashing Θ(N) bytes — the redundant work (cProfile: ~99% in `PolynomialHash.hash`) is removed. Byte-identity fixed==original==broken, **0 mismatches** (HARD gate). Wall-clock @2M: fixed 0.546 ± 0.016 ms, speedup **800×** (≥100× at every size ≥256 KB; 730–800× for N≥1M, ±~10% across seeds). Scaling: broken log-log slope **1.044** (linear — **not** N log N); fixed 1.034 over ≥1M (O(N), guard-backed; full-sweep 1.327 is small-N timer-floor inflation). Results: `experiments/exp_002_flatten/results/exp002_flatten_latest.json`. **Caveat (carried to paper):** the ~730–800× multiplier is Python-interpreter-amplified (pure-Python per-byte hashing in the broken arm); the language-independent claim is the *elimination of redundant work* (guard-proven), with a smaller constant expected in Rust (confirmation deferred). Promoted from REFRAMED on the pre-registered LOGBOOK EXP-002 criterion. |
 | S5 | Pure-functional 4KB allocations avoid stop-the-world GC pauses (p99) | IN-PROGRESS | `6_gc_tail_latency.csv` exists; needs re-run with replicates and a defined p99 protocol. Low-risk but currently single-shot. → **EXP-008**. |
 | S6 | hashrope's O(log N) edit draws less CPU+DRAM energy per mutation than an O(N) contiguous copy | PLANNED | **EXP-016** (supporting; grounds the memory-bus motivation — DRAM ≈ 15 pJ/bit ≫ ALU ≈ 0.1 pJ/bit). **Relative, paired** joules/op via Intel RAPL (package domain; + DRAM domain if the part exposes it), read on Windows via LibreHardwareMonitor (admin/MSR). Laptop CPU throttles → cross-run error model (≥3 invocations, mean±std), interleaved paired design within one thermal envelope, fixed power plan, warmup discarded (user's prior settling/warmup protocol folded in at kickoff). Reuses the EXP-003 mutation workload (joules/op reported alongside ms/op). **NOT** a datacenter-energy claim — absolute datacenter energy is **S3/EXP-015** only; CPU-local, not Colab. |
+
+## Competitive claims (vs SOTA per-leg specialists)
+
+Design principle (agreed 2026-06-12): actual published implementations where
+extractable (vendored verbatim with full provenance), faithful cited
+reimplementations where not — never simplified/toy baselines.
+
+| ID | Claim | Status | Evidence / Notes |
+|----|-------|--------|------------------|
+| B1 | hashrope identifies reusable prefixes faster than SGLang's RadixCache (RadixAttention; Zheng et al., NeurIPS 2024) beyond a crossover L* ~10⁵ tokens — O(log² N) hash comparisons vs Θ(L) token-touch — with exact token-level correctness | IN-PROGRESS | **EXP-017** (designed 2026-06-12; LOGBOOK plan + verbatim promotion criterion pre-registered before any code). Baseline = vendored **byte-identical** sglang v0.1.17 `radix_cache.py` (paper-era release, one day after arXiv:2312.07104v2); provenance in `third_party/sglang_radix_cache/NOTICE.md`. Framing B: identification query on maintained structures, setup untimed. Pre-registered honest expectations: radix wins short/typical 2024-era conversation lengths and the one-vs-many K-sweep (its home field) — reported in full; hashrope wins ≥256k tokens; numpy flat scan is the C-speed floor reference. EXP-018 (serving-loop replay, Framing C) extends this leg. |
+| B2 | hashrope (Rust) is competitive with Ropey on incremental-edit workloads at LLM-context scale while additionally maintaining hash metadata | PLANNED | Leg 1 competitive baseline; Rust-to-Rust (hashrope crate vs ropey crate). Couples to the L1/L2 re-measurement (EXP-003). Experiment number assigned at kickoff. |
+| B3 | hashrope branch/snapshot is competitive with a faithful PagedAttention block-table COW reimplementation (Kwon et al. 2023, §4.2) on canonical ToT branching traces (Game of 24) | PLANNED | Leg 2 competitive baseline; no extractable library exists for CPU-level block-table branching — faithful reimplementation, cited, code public for review. Builds on M1/EXP-004. Experiment number assigned at kickoff. |
 
 ## Correctness / safety claims (best-paper differentiators)
 

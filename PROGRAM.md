@@ -65,6 +65,8 @@ Legend — **Mode:** Sol = solidify, Add = new, Abl = ablation, Exp = expand.
 | 014 | T5 | Lazy vs eager construction cost (Theorem 44), Rust 0.3.0, on real workloads | Add | local-Rust | planned | Isolate O(t·log t) lazy vs O(k·c_F·t) eager construction. |
 | 015 | S3 | **HEADLINE ENERGY:** real serving stack (vLLM/SGLang) + 7–8B model — does hashrope's O(log² N) prefix identification → KV reuse → lower TTFT / higher throughput / lower **energy**, **isolated** from the framework's built-in prefix caching | Add | **GPU-Colab (A100/H100)** | planned | **DESIGN CONFER BEFORE ANY CELLS.** Interactive, one cell at a time. Isolation methodology is the whole ballgame (the old suite's failure was unfalsifiability). |
 | 016 | S6 | **SUPPORTING ENERGY:** CPU package (+DRAM if exposed) joules per mutation via Intel RAPL, read with LibreHardwareMonitor — hashrope O(log N) edit vs O(N) contiguous copy | Add | local-CPU | planned | Grounds the memory-bus motivation. **Reuses the EXP-003 workload.** Fold in the user's prior LibreHardwareMonitor settling/warmup protocol. LibreHardwareMonitor (admin/MSR) — confirm install at kickoff; WSL2 cannot read host RAPL. |
+| 017 | B1 | **COMPETITIVE Leg 3:** prefix-identification — hashrope LCP vs SGLang RadixCache v0.1.17 (vendored byte-identical) + numpy flat C-speed floor, on controlled-L corpus sweep (1k–1M tokens) + ShareGPT/LMSYS real pairs (co-primary) + one-vs-many K-sweep | Add | local-CPU | planned | First experiment of the competitive-baseline layer. Framing B: identification query on maintained structures (setup untimed). LOGBOOK plan + verbatim criterion pre-registered 2026-06-12, before any code. Baseline provenance: `third_party/sglang_radix_cache/NOTICE.md`. |
+| 018 | B1 (ext) | **COMPETITIVE Leg 3+1:** serving-loop replay — per-request radix match+insert vs hashrope append+LCP on ShareGPT/LMSYS conversation streams | Add | local-CPU | planned | Framing C; shares the EXP-017 harness. Bundles incremental edit (Leg 1) with identification (Leg 3) — the unification systems number. Design confer at kickoff. |
 
 ## The energy narrative (two committed experiments, fixed hierarchy)
 
@@ -94,6 +96,16 @@ Legend — **Mode:** Sol = solidify, Add = new, Abl = ablation, Exp = expand.
 - **Recommended first step: EXP-002** — local, fast, low-risk, converts a prior
   weakness into a ~500× strength, and re-establishes the
   plan→red→run→record→commit cadence. (Alternative substance-first start: EXP-005.)
+- **Competitive-baseline layer (EXP-017+, started 2026-06-12):** head-to-head
+  vs SOTA per-leg specialists on canonical workloads, layered ON TOP of the
+  closed mechanism experiments (EXP-001…006 stay clean; no retrofitting).
+  Order: EXP-017 (SGLang radix, Leg 3) → EXP-018 (serving-loop replay) →
+  Ropey (Leg 1, Rust workstream, couples to EXP-003) → PagedAttention COW
+  (Leg 2, Game of 24). Design principle: actual published implementations
+  where extractable (vendored verbatim with provenance), faithful cited
+  reimplementations otherwise — never toy baselines. Leg 4 (RepeatNode) has
+  no direct SOTA competitor; the naive-materialization baseline (EXP-006)
+  stands.
 
 ## Status key
 

@@ -1190,3 +1190,206 @@ with the hash maintained through the RepeatNode for prefix-identity queries.
 - Tests: tests/test_repeat.py
 - Bench: scripts/exp006_bench.py ; results experiments/exp_006_repeat/results/
 - Figure: scripts/exp006_figure.py ; figures/exp006_repeat_*.{png,pdf}
+
+
+---
+
+## EXP-017: Competitive prefix-identification — hashrope LCP vs SGLang RadixCache v0.1.17 (claim B1)
+
+**Date:** 2026-06-12 (planned)
+**Researcher:** Muntaser Syed
+**Type:** computational
+**Status:** planned
+
+### Context
+
+First experiment of the competitive-baseline layer (head-to-head vs SOTA
+specialists on canonical workloads; EXP-001…006 proved the mechanisms
+internally). Leg 3 of the unification thesis: prefix-reuse identification.
+Baseline = the radix tree underlying RadixAttention (Zheng et al., NeurIPS
+2024), vendored **byte-identical** from sglang v0.1.17 (the paper-era release,
+one day after arXiv:2312.07104v2) at `third_party/sglang_radix_cache/` —
+provenance in its NOTICE.md. Smoke-tested standalone 2026-06-12: standalone
+usability confirmed; `match_prefix` measured at ~58–64 ns/token flat across
+L = 1k–1M tokens (sandbox machine; exploratory).
+
+**Framing (agreed):** EXP-017 = the *identification query on maintained
+structures*. Both arms already hold the cached context (setup untimed); we
+time only the query "how much prefix does this arriving context share with
+the cached one?" — RadixCache's production query path (`match_prefix`) vs
+hashrope LCP (EXP-005 machinery). The full serving-loop replay (per-request
+match+insert vs append+LCP) is split out as **EXP-018**, sharing this harness.
+
+### Hypothesis
+
+SGLang's `match_prefix` costs Θ(L) token comparisons (L = matched prefix
+length): `_key_match` touches every matched token. hashrope LCP costs
+O(log² N) hash comparisons without touching content (EXP-005 guard: exactly
+2·⌈log₂ N⌉ substr-hash calls). Therefore a latency crossover L* exists:
+radix wins short prefixes, hashrope wins long prefixes.
+
+**Pre-registered expectations (written before any data, priors stated):**
+- Radix per-token cost ~60 ns (prior: Claude-sandbox smoke probe; this
+  machine will differ somewhat). hashrope LCP ~8.6–12.8 ms near-flat for
+  N_bytes = 1–4 MB (prior: EXP-005 on THIS machine). Heterogeneous priors;
+  the experiment runs both arms on this machine.
+- Crossover expected between **128k and 256k tokens** (60 ns/token vs ~8.6 ms
+  flat ⇒ ~1.4×10⁵).
+- **Radix wins the typical 2024-era real-pair cells** (ShareGPT/LMSYS
+  conversations average ~2k tokens) — expected, will be reported as such.
+  hashrope wins the long-context regime (≥256k tokens) where 2026 serving
+  (agentic / long-context) actually operates.
+- A C-speed flat scan (numpy) wins raw query latency at all tested sizes —
+  expected and reported; it is the floor reference, not a deployable
+  structure (it requires contiguous materialized copies: O(N) per-context
+  memory and O(N) edits, the costs EXP-002/004 quantified).
+- One-vs-many (K-sweep): radix does one tree walk regardless of K; hashrope
+  with library primitives does K pairwise LCPs ⇒ radix's advantage grows
+  ~linearly in K. Radix's home-field cell; reported honestly.
+
+### Independent variables
+
+- **Matched prefix length L (tokens):** {1k, 4k, 16k, 64k, 128k, 256k, 512k,
+  1M} — controlled-L sweep on real tokenized corpus (primary crossover story)
+- **Arm:** {radix (vendored v0.1.17 `match_prefix`), hashrope (LCP via
+  prefix-hash binary search on token-encoded rope), flat-np (numpy
+  C-speed array compare — floor reference)}
+- **Workload:** {controlled-L (corpus), sharegpt (real pairs), lmsys (real
+  pairs)} — ShareGPT and LMSYS **co-primary**
+- **K cached candidates (one-vs-many cell):** K ∈ {1, 10, 100} at L = 64k;
+  K ∈ {1, 10} at L = 512k (skip (100, 512k) if build cost/memory is
+  prohibitive; report the skip honestly, as in EXP-006)
+- **Seed:** {42, 43, 44} (corpus realization + dataset sampling + divergence
+  positions)
+
+### Dependent variables / metrics
+
+- **Identification latency per query (ms):** warm, reps=5 within invocation →
+  median; mean ± std across n=9 runs
+- **Op-count guards:**
+  (a) hashrope substr-hash calls ≤ 2·⌈log₂ N_bytes⌉ per query (EXP-005 guard
+  reused);
+  (b) radix token comparisons ≥ L on every controlled-L query — measured with
+  a **separately generated instrumented copy** (documented deterministic
+  patch adding counters; generator script + diff committed; used ONLY for
+  op-count passes, never for timing — all timed runs use the byte-identical
+  vendored file)
+- **Correctness (HARD gate):** all arms return LCP length == independent
+  token-level oracle (plain Python loop over the two token lists), for every
+  pair in every cell; 0 mismatches
+- **Crossover L*:** smallest tested L where hashrope mean < radix mean
+- **Real-pair distribution:** histogram of token-level shared-prefix lengths
+  per dataset; per-arm latency on real pairs; fraction of pairs falling in
+  each arm's winning regime
+- **Descriptive (non-gating):** structure build memory (tracemalloc) per arm
+  at L = 512k; structure build time per arm
+
+### Control conditions
+
+- **Common currency (EXP-001 lesson):** gpt2 tokenization, tokenize-once;
+  ALL arms receive the SAME two token sequences per pair. The oracle and all
+  arms answer at token granularity — the unit KV-reuse actually needs.
+- **hashrope encoding:** the token stream is stored as fixed-width **4-byte
+  little-endian** per token; token-LCP = floor(byte-LCP / 4), exact (if two
+  streams first differ at token i, bytes < 4i are identical and at least one
+  byte in [4i, 4i+4) differs). 4 B is conservative *against* hashrope (2 B
+  would halve N_bytes and shrink log² N); chosen for tokenizer-vocab
+  generality. N_bytes = 4·L is reported alongside L.
+- **Radix mutation semantics:** `match_prefix` splits nodes on first
+  partial-boundary query (verified in smoke test, idempotent after). One
+  untimed warm query precedes timing; timed queries are steady-state. The
+  per-visit `time.time()` refresh stays — it is the published code's cost.
+- **Radix values:** torch tensors (`torch.arange`), exactly the production
+  pattern (`indices.clone()` in `cache_req`); `torch.concat` in
+  `match_prefix` is part of its measured query path, as published.
+- Setup (tree insert / rope build / array materialization) is **untimed** in
+  all cells; only the identification query is timed.
+- Same-language comparison: both structures pure Python on the same
+  interpreter (fairer than our prior cross-language comparisons); flat-np is
+  explicitly labeled C-speed floor.
+- Fresh subprocess per (seed, invocation); warmup discarded; GC handling
+  identical across arms (EXP-005 bench template).
+- Controlled-L construction: cached = corpus_tokens[:L+1024]; query =
+  corpus_tokens[:L] + divergent tail (1024 tokens from a disjoint corpus
+  region, first token forced ≠ cached[L]). Real corpus content, never
+  synthetic repetition.
+- **Real-pair rule (deterministic per seed):** conversations with ≥4 turns;
+  per conversation draw t ∈ [2, n_turns−1] (seeded); rendering =
+  `f"{role}: {content}\n\n"` concatenated; pair = (render(turns[:t+1]),
+  render(turns[:t])) tokenized independently. 200 pairs per dataset per
+  seed. Token-level shared prefix is whatever BPE yields near the junction —
+  identical input to all arms, so internally consistent.
+
+### Protocol (TDD, red-first)
+
+1. `src/competitive.py`: `tokens_to_bytes` / `token_lcp_from_byte_lcp`
+   (4 B LE), `build_token_rope` (reuses `build_fat_leaf_rope` + `make_hash`),
+   `radix_lcp(cache, key)` wrapper, `hashrope_lcp_tokens(rope_a, rope_b, h)`
+   (reuses EXP-005 LCP), `flat_lcp_np(arr_a, arr_b)`, `oracle_lcp(a, b)`.
+2. `tests/test_competitive.py` (red-first): 4 B round-trip; token-LCP
+   conversion exact for divergence at every byte offset within a token
+   group; all four answers agree on constructed cases (divergence at 0, mid,
+   full-prefix); radix wrapper length semantics; instrumented-radix counter
+   ≥ L on full match and byte-identity of its timing twin.
+3. `tools/make_instrumented_radix.py`: generates
+   `third_party/sglang_radix_cache/radix_cache_instrumented.py` from the
+   vendored file via a minimal deterministic patch (comparison counter in
+   `_key_match`, node-visit counter); loud header in the generated file:
+   op-counting only, never timed.
+4. `src/realpairs.py`: deterministic (cached, query) token-pair extraction
+   from `data/canonical/{sharegpt,lmsys}_sample.jsonl` per the rule above.
+5. `scripts/exp017_bench.py`: orchestrator + worker (EXP-005 template).
+   Worker: build (untimed) → warm → correctness (HARD) → timed queries →
+   op-count pass → JSON with env metadata. Orchestrator: 3 seeds × 3
+   invocations, aggregate, evaluate criterion verbatim, write latest +
+   timestamped JSON.
+6. `scripts/exp017_figure.py`: (a) latency vs L log-log, three arms,
+   crossover marked; (b) real-pair latency by dataset over the L
+   distribution; (c) K-sweep. png + pdf.
+7. Record results, evaluate criterion verbatim, update CLAIMS.md (B1) +
+   PROGRAM.md, commit.
+
+### Environment
+
+- **Hardware:** laptop, Intel i9-14900HX, 64 GB RAM, RTX 4090 (idle)
+- **Software:** Windows 11 (10.0.26200), Python 3.12.2, hashrope 0.2.2,
+  transformers 5.1.0 / tokenizers 0.22.2 (gpt2), torch (version recorded at
+  runtime), numpy (version recorded at runtime)
+- **Baseline:** sglang v0.1.17 radix_cache.py, SHA-256 42749c7c…702ca71c,
+  byte-identity asserted at bench start
+- **Git commit:** [fill: clean SHA, bench script committed BEFORE the
+  confirmatory run]
+- **Seeds:** {42, 43, 44}
+
+### Reporting & framing (pre-registered)
+
+Every cell is reported, including every cell radix or flat-np wins — no
+omission. Narrative emphasis (legitimate, decided before data): the
+long-context regime is where LLM serving is heading and where the crossover
+bites; short-context radix wins and the K-sweep advantage are reported with
+their structural context (flat/radix store every token of every cached
+context; rope shares structure — EXP-004's 166×; per-query absolute costs
+remain small in all arms at real-pair sizes). No unmeasured mitigation
+(e.g., hash-indexed candidate sets for one-vs-many) is claimed; future work
+at most.
+
+### Promotion criterion (verbatim, written before any data)
+
+B1 → SUPPORTED iff, across ≥3 seeds × ≥3 invocations (n=9):
+
+(i)   **[HARD] Correctness:** every arm == token-level oracle LCP for every
+      pair in every cell (controlled-L, real pairs, K-sweep) — 0 mismatches.
+(ii)  **Guards:** hashrope substr-hash calls ≤ 2·⌈log₂ N_bytes⌉ on every
+      query; instrumented radix comparisons ≥ L on every controlled-L
+      full-prefix query.
+(iii) **Crossover exists and is stable:** ∃ L* in the tested grid s.t. for
+      every tested L ≥ L*, hashrope mean + 1σ < radix mean − 1σ, and for
+      every tested L < L*, radix mean ≤ hashrope mean. Per-seed L* within
+      one grid step of the pooled L*.
+(iv)  **Long-context win:** at L = 512k AND L = 1M, hashrope beats radix
+      with paired sign test 9/9 (p = 0.004) and mean speedup ≥ 2× at both.
+(v)   All headline numbers mean ± std (n=9). Real-pair and K-sweep cells are
+      reported descriptively in full (they inform framing, not the verdict).
+
+Failure of (i)/(ii) → experiment FAILS outright (bug hunt; no retrofit).
+Failure of (iii)/(iv) → B1 stays unsupported; report honestly.
