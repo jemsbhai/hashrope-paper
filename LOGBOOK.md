@@ -529,3 +529,154 @@ S4 moves from "inherent serialization tax / damage control" to a **supported str
 - Tests (gate + guard): tests/test_flatten.py
 - Bench: scripts/exp002_bench.py ; results experiments/exp_002_flatten/results/
 - Figure: scripts/exp002_figure.py ; figures/exp002_flatten_latency.{png,pdf}
+
+
+---
+
+## EXP-005: Prefix-reuse identification — LCP via prefix-hash binary search (claim T3)
+
+**Date:** 2026-06-11 (planned)
+**Researcher:** Muntaser Syed
+**Type:** computational
+**Status:** planned
+
+### Hypothesis
+The longest common prefix (LCP) of two ropes can be found in O(log² N) time via
+binary search on prefix hashes (each step using `rope_substr_hash`, Theorem 9).
+Given ropes A, B of comparable length ~N, binary search performs O(log N) steps,
+each comparing a single prefix hash in O(k·log w) via the Theorem 9 fast path,
+yielding O(log N · log w) = O(log² N). This is the **content-identity-query**
+side of the unification thesis: the same persistent structure that gives O(log)
+edits answers "how much prefix do these two contexts share?" in O(log² N),
+enabling prefix-dedup for KV-cache reuse without materializing or scanning the
+full text.
+
+Prior informal evidence: ~28 ms flat from 500 KB to 16 MB (exact divergence byte
+verified on 50+ random points). This experiment formalizes that under the
+confirmatory protocol.
+
+### Independent variables
+- Rope size N (bytes): {64,000; 256,000; 1,000,000; 2,000,000; 4,000,000; 8,000,000}
+- LCP fraction f (where the divergence byte is placed): {0.5} (primary timing
+  condition), {0.0, 0.99} (secondary)
+- Content: real corpus (3 seeds) alongside synthetic controls (flipped-byte pairs
+  with algebraically known LCP)
+- Corpus seed: {42, 43, 44}
+
+### Dependent variables / metrics
+- **Correctness (HARD gate):** `lcp_hash` returns the exact same position as
+  `lcp_brute` for every (N, seed, f) — 0 mismatches.
+- **Step-count guard:** number of `rope_substr_hash` calls per `lcp_hash`
+  invocation ≤ ceil(log2(min(len_a, len_b))) + 1.
+- **LCP-hash latency (ms):** warm, per (N, f), mean ± std across ≥9 runs.
+- **Brute-force latency (ms):** comparison baseline (expected O(LCP_length), i.e.
+  O(f·N) — linear in the prefix length, providing a scaling contrast).
+- **Prefix-dedup workload (descriptive):** K=10 simulated "prompts" sharing a
+  system-prompt prefix of known length; report LCP identification accuracy and
+  total batch LCP time. (Subsumed by the correctness gate if gate (i) passes;
+  included for the narrative connecting T3 to the prefix-reuse application.)
+
+### Control conditions
+- Brute-force byte-by-byte LCP (`lcp_brute`) as correctness oracle + timing
+  baseline
+- Synthetic control: pair with identical prefix + single flipped byte at position
+  L → algebraically known LCP = L. Guarantees correctness is tested against a
+  ground truth, not just against a second implementation.
+- Real corpus (same files as EXP-001/002: `data/raw/corpus_s{42,43,44}.txt`,
+  SHA-256[:16] 42=fda6a43a, 43=85ca5870, 44=dfd645be)
+- Same hardware, AC power, idle baseline, warmup discarded, cool-downs
+
+### Workload construction
+For each (N, seed, f):
+1. `A_bytes = corpus[:N]`; build rope A via bottom-up 4 KB fat-leaf merge
+   (same builder as EXP-002).
+2. `B_bytes = A_bytes` with byte at position `L = int(f * N)` flipped
+   (XOR 0xFF; if the result is the same byte — can't happen with XOR 0xFF —
+   use 0x01). This guarantees `LCP(A, B) = L` exactly.
+3. Build rope B from B_bytes.
+4. For f=0.0: flip at position 0 → LCP = 0.
+   For f=0.5: flip at position N//2 → LCP = N//2.
+   For f=0.99: flip at position int(0.99*N) → LCP = int(0.99*N).
+
+Prefix-dedup workload: 10 "prompts" = shared_prefix (corpus[:P]) +
+unique_suffix (10 disjoint corpus slices). Verify LCP correctly returns P
+for all 45 pairs.
+
+### Protocol (TDD, red-first)
+1. Implement `lcp_hash(rope_a, rope_b, h)` in `src/lcp.py`: binary search
+   on prefix length L ∈ [0, min(len_a, len_b)], comparing
+   `rope_substr_hash(A, 0, L, h) == rope_substr_hash(B, 0, L, h)`. Also
+   `lcp_brute(a: bytes, b: bytes) -> int`: byte-by-byte oracle. Include an
+   instrumented variant (`lcp_hash_counted`) returning (lcp, num_hash_calls).
+2. `tests/test_lcp.py` (red-first, mirrors EXP-001/002):
+   - `test_lcp_correctness_real_corpus`: lcp_hash == lcp_brute on corpus
+     slices with known flipped byte (RED at stub)
+   - `test_lcp_correctness_synthetic`: algebraically known LCP (RED at stub)
+   - `test_lcp_step_count`: hash queries ≤ ceil(log2(N)) + 1 (RED at stub)
+   - `test_lcp_zero_prefix`: f=0.0 → returns 0
+   - `test_lcp_full_match`: identical ropes → LCP = len
+   - `test_lcp_empty_ropes`: edge cases (None, empty)
+3. `scripts/exp005_bench.py`: orchestrator (spawns fresh subprocesses). Per
+   (seed, invocation): load corpus, build rope pairs at each (N, f), time
+   lcp_hash (reps=5→median) and lcp_brute (reps=1 at large N), record
+   correctness + step count + latencies. Write
+   `experiments/exp_005_lcp/results/` JSON (latest + timestamped) with env,
+   corpus SHA-256[:16], git SHA, params, verbatim criterion evaluation.
+4. `scripts/exp005_figure.py`: (a) log-log latency vs N (hash at f=0.5 vs
+   brute at f=0.5, with fitted slopes); (b) step count vs N (should be
+   ~ceil(log2 N)). Save .png (300 dpi) + .pdf to `figures/`.
+5. Record Results/Observations/Interpretation here + findings.md; evaluate
+   promotion criterion verbatim; update CLAIMS.md + PROGRAM.md; commit.
+
+### Environment
+- **Hardware:** laptop, Intel i9-14900HX (24c/32t hybrid P+E), 64 GB RAM,
+  RTX 4090 (idle; CPU-only)
+- **Software:** Windows 11 (10.0.26200), Python 3.12.2, hashrope 0.2.2
+- **Git commit:** [fill before run — commit bench script first]
+- **Seeds:** corpus {42, 43, 44}
+
+### Promotion criterion (verbatim, written before any data)
+T3 → **SUPPORTED** iff, across ≥3 corpus seeds × ≥3 independent invocations
+(n ≥ 9):
+
+(i)   **[HARD] Correctness:** `lcp_hash` returns the identical divergence
+      position as `lcp_brute` for every (N, seed, f) tested — 0 mismatches.
+      For synthetic controls with algebraically known LCP = L, both return
+      exactly L.
+(ii)  **Step-count guard:** `lcp_hash` performs ≤ ceil(log2(min(len_a,
+      len_b))) + 1 calls to `rope_substr_hash` per invocation, at every
+      (N, f).
+(iii) **Wall-clock scaling:** at f=0.5, log-log slope of LCP-hash latency
+      vs N ≤ 0.3 across the full size sweep {64K … 8M} (for reference:
+      O(log² N) predicts slope ~0.14 over this range; O(N) = 1.0; the
+      informal pilot showed ~flat).
+(iv)  **Brute-force contrast (descriptive, non-gating):** brute-force
+      latency at f=0.5 scales roughly linearly (slope ∈ [0.7, 1.3]),
+      confirming the comparison baseline is O(N).
+(v)   All numbers reported as mean ± std across runs (n ≥ 9); within-run
+      CI retired.
+
+Failure of (i) → experiment FAILS outright. Failure of (ii)/(iii) → T3
+stays IN-PROGRESS, investigate (no retrofit). (iv) is descriptive.
+
+**Honesty note:** LCP-hash latency in pure Python includes interpreter
+overhead per hash query; the transferable claim is the O(log² N) **step
+count** (guard-proven), with a smaller absolute constant in Rust. The
+log-log slope test captures the scaling shape even with Python overhead
+inflating the intercept.
+
+### Results
+[To be filled after run.]
+
+### Observations
+[To be filled after run.]
+
+### Interpretation
+[To be filled after run.]
+
+### Artifacts
+- Implementation: src/lcp.py
+- Tests: tests/test_lcp.py
+- Bench: scripts/exp005_bench.py
+- Figure: scripts/exp005_figure.py
+- Results: experiments/exp_005_lcp/results/
