@@ -331,3 +331,89 @@ class TestAllArmsAgree:
     def test_empty_one(self):
         """One empty, one non-empty -> LCP = 0."""
         self._check_all_arms([], [1, 2, 3])
+
+
+# ============================================================
+# Section 7: Instrumented radix cache (op-count guard)
+# ============================================================
+
+from third_party.sglang_radix_cache import radix_cache_instrumented as ri
+
+
+class TestInstrumentedRadix:
+    """Verify the generated instrumented radix_cache_instrumented.py."""
+
+    def test_vendored_file_byte_identity(self):
+        """The TIMING file (radix_cache.py) must be byte-identical to v0.1.17."""
+        import hashlib
+        vendor_path = os.path.join(
+            os.path.dirname(__file__), "..",
+            "third_party", "sglang_radix_cache", "radix_cache.py",
+        )
+        with open(vendor_path, "rb") as f:
+            sha = hashlib.sha256(f.read()).hexdigest()
+        expected = "42749c7cf0f3cbf42066dd273360730c8fe10e2a21983a49f102a500702ca71c"
+        assert sha == expected, f"vendored file SHA-256 mismatch: {sha}"
+
+    def test_algorithm_equivalence(self):
+        """Instrumented tree gives the same match_prefix results as original."""
+        from third_party.sglang_radix_cache.radix_cache import (
+            RadixCache as OrigCache,
+        )
+        seq = list(range(200))
+        query = list(range(120)) + [99999] + list(range(300, 379))
+
+        orig = OrigCache(None, None, False)
+        orig.insert(seq, torch.arange(len(seq)))
+        v_orig, _ = orig.match_prefix(query)
+
+        inst = ri.RadixCache(None, None, False)
+        inst.insert(seq, torch.arange(len(seq)))
+        v_inst, _ = inst.match_prefix(query)
+
+        assert len(v_orig) == len(v_inst)
+
+    def test_comparison_counter_full_match(self):
+        """On a full-prefix match of L tokens, comparisons >= L."""
+        t = ri.RadixCache(None, None, False)
+        L = 1000
+        cached = list(range(L))
+        t.insert(cached, torch.arange(L))
+        t.match_prefix(cached)  # warm (settle splits)
+        ri.reset_all_counters()
+        v, _ = t.match_prefix(cached)
+        assert len(v) == L
+        assert ri.get_comparison_count() >= L, (
+            f"comparisons {ri.get_comparison_count()} < L={L}"
+        )
+
+    def test_comparison_counter_partial_match(self):
+        """On a partial match, comparisons >= matched length."""
+        t = ri.RadixCache(None, None, False)
+        cached = list(range(500))
+        t.insert(cached, torch.arange(500))
+        query = list(range(200)) + [99999]
+        t.match_prefix(query)  # warm
+        ri.reset_all_counters()
+        v, _ = t.match_prefix(query)
+        matched = len(v)
+        assert matched == 200
+        assert ri.get_comparison_count() >= matched
+
+    def test_counter_reset(self):
+        """reset_all_counters zeros both counters."""
+        t = ri.RadixCache(None, None, False)
+        t.insert([1, 2, 3], torch.arange(3))
+        t.match_prefix([1, 2, 3])
+        assert ri.get_comparison_count() > 0
+        ri.reset_all_counters()
+        assert ri.get_comparison_count() == 0
+        assert ri.get_node_visit_count() == 0
+
+    def test_node_visit_counter(self):
+        """Node visits > 0 on any non-trivial match."""
+        t = ri.RadixCache(None, None, False)
+        t.insert([1, 2, 3], torch.arange(3))
+        ri.reset_all_counters()
+        t.match_prefix([1, 2, 3])
+        assert ri.get_node_visit_count() > 0
