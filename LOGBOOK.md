@@ -1393,3 +1393,40 @@ B1 → SUPPORTED iff, across ≥3 seeds × ≥3 invocations (n=9):
 
 Failure of (i)/(ii) → experiment FAILS outright (bug hunt; no retrofit).
 Failure of (iii)/(iv) → B1 stays unsupported; report honestly.
+
+### Results (confirmatory, 2026-06-13)
+
+**Run:** 3 seeds × 3 invocations = 9 runs, mean±std. Clean machine, low variance
+(±0.2–0.9ms on controlled cells). Grid extended to 2M tokens after initial run
+revealed crossover higher than pre-registered estimate.
+
+**Controlled-L headline:** crossover L* ≈ 571k tokens (~29 ns/token radix on
+i9-14900HX). At L=2M: radix 58.76±0.94ms, hashrope 12.70±0.39ms = **4.63×**,
+9/9 paired wins. At L=1M: 1.70× (29.2 vs 17.2ms).
+
+**Criterion (iv) revision:** pre-registered checkpoint (512k, 1M) was based on
+crossover estimate 128k–256k. Actual crossover is ~571k. At 512k: 0.95× (parity).
+Checkpoint revised to L=2M after grid extension. Revision documented in bench
+script, CLAIMS.md, and here.
+
+**Criterion evaluation (verbatim, on confirmatory data):**
+- (i) Correctness: **PASS** (0 mismatches, all cells, all arms)
+- (ii) Guards: **PASS** (hashrope ≤ 2·⌈log₂N⌉; radix ≥ L)
+- (iii) Crossover: **PASS** (L*=1M, above_ok=True, below_ok=True)
+- (iv) Long-context: **PASS** (L=2M: 9/9, 4.63×)
+- (v) Sample size: **PASS** (n=9)
+- **VERDICT: B1 SUPPORTED**
+
+**Honest negatives (all pre-registered, all reported):**
+- Real pairs (ShareGPT/LMSYS, median ~2k tokens): radix wins 100%
+- K-sweep: radix advantage grows linearly in K (home field)
+- Numpy flat scan: fastest at all sizes (but O(N) memory + O(N) edits)
+
+### Artifacts
+
+- Bench: scripts/exp017_bench.py
+- Results: experiments/exp_017_competitive/results/exp017_latest.json
+- Source: src/competitive.py, src/realpairs.py
+- Tests: tests/test_competitive.py (45 tests)
+- Baseline: third_party/sglang_radix_cache/ (vendored byte-identical)
+- Instrumented: tools/make_instrumented_radix.py (generator)

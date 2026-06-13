@@ -1,0 +1,282 @@
+{
+  "experiment": "EXP-002",
+  "claim": "S4",
+  "title": "Flatten: in-order materialization (fixed) vs midpoint re-split (broken control)",
+  "timestamp_utc": "2026-06-11T19:08:29.192681+00:00",
+  "git_commit": "47ea6274a0d796d2e912abd29dbdc46799feb691",
+  "git_dirty": false,
+  "env": {
+    "python_version": "3.12.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 32,
+    "hashrope_version": "0.2.2",
+    "hashrope_file": "E:\\data\\code\\claudecode\\hashrope\\packages\\python\\hashrope\\__init__.py"
+  },
+  "params": {
+    "seeds": [
+      42
+    ],
+    "invocations": 1,
+    "n_runs_per_cell": 1,
+    "reps": 2,
+    "sizes": [
+      64000,
+      256000,
+      2000000
+    ],
+    "reference_n": 2000000,
+    "leaf_bytes": 4096,
+    "cooldown_s": 2.0,
+    "within_invocation_estimator": "median_of_reps",
+    "error_bar": "std across runs (n=seeds*invocations); within-run CI retired per the EXP-001 cross-run error model",
+    "sweep_note": "16 MB pre-registered IV dropped: corpus ~11.5 MiB; 16 MB would require tiling. Recorded deviation."
+  },
+  "corpus_sha256_16": {
+    "42": "fda6a43a3fe34184"
+  },
+  "per_size": {
+    "64000": {
+      "broken_ms": {
+        "mean": 11.30289991851896,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          11.30289991851896
+        ]
+      },
+      "fixed_ms": {
+        "mean": 0.003750086762011051,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.003750086762011051
+        ]
+      },
+      "speedup": {
+        "mean": 3014.036910564058,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          3014.036910564058
+        ]
+      },
+      "identity_ok_all": true,
+      "identity_mismatches": 0,
+      "leaves": 16,
+      "guard": {
+        "broken": {
+          "leaf": 30,
+          "split": 15,
+          "hash": 30
+        },
+        "fixed": {
+          "leaf": 0,
+          "split": 0,
+          "hash": 0
+        }
+      }
+    },
+    "256000": {
+      "broken_ms": {
+        "mean": 47.53695009276271,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          47.53695009276271
+        ]
+      },
+      "fixed_ms": {
+        "mean": 0.06464985199272633,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.06464985199272633
+        ]
+      },
+      "speedup": {
+        "mean": 735.2986685586076,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          735.2986685586076
+        ]
+      },
+      "identity_ok_all": true,
+      "identity_mismatches": 0,
+      "leaves": 63,
+      "guard": {
+        "broken": {
+          "leaf": 126,
+          "split": 63,
+          "hash": 126
+        },
+        "fixed": {
+          "leaf": 0,
+          "split": 0,
+          "hash": 0
+        }
+      }
+    },
+    "2000000": {
+      "broken_ms": {
+        "mean": 392.1255499590188,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          392.1255499590188
+        ]
+      },
+      "fixed_ms": {
+        "mean": 0.5350001156330109,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          0.5350001156330109
+        ]
+      },
+      "speedup": {
+        "mean": 732.9447947783278,
+        "std": 0.0,
+        "n": 1,
+        "cv": 0.0,
+        "all": [
+          732.9447947783278
+        ]
+      },
+      "identity_ok_all": true,
+      "identity_mismatches": 0,
+      "leaves": 489,
+      "guard": {
+        "broken": {
+          "leaf": 1022,
+          "split": 511,
+          "hash": 1022
+        },
+        "fixed": {
+          "leaf": 0,
+          "split": 0,
+          "hash": 0
+        }
+      }
+    }
+  },
+  "per_seed_means": {
+    "64000": {
+      "42": {
+        "broken_ms_mean": 11.30289991851896,
+        "fixed_ms_mean": 0.003750086762011051,
+        "speedup_mean": 3014.036910564058
+      }
+    },
+    "256000": {
+      "42": {
+        "broken_ms_mean": 47.53695009276271,
+        "fixed_ms_mean": 0.06464985199272633,
+        "speedup_mean": 735.2986685586076
+      }
+    },
+    "2000000": {
+      "42": {
+        "broken_ms_mean": 392.1255499590188,
+        "fixed_ms_mean": 0.5350001156330109,
+        "speedup_mean": 732.9447947783278
+      }
+    }
+  },
+  "scaling_slopes_loglog": {
+    "broken_ms": 1.0300610715499852,
+    "fixed_ms": 1.4095606429669452
+  },
+  "promotion_criterion": {
+    "i_byte_identity": {
+      "pass": true,
+      "total_mismatches": 0,
+      "gate": "HARD"
+    },
+    "ii_operation_guard": {
+      "pass": true,
+      "per_size": {
+        "64000": {
+          "fixed_zero": true,
+          "broken_positive": true,
+          "fixed": {
+            "leaf": 0,
+            "split": 0,
+            "hash": 0
+          },
+          "broken": {
+            "leaf": 30,
+            "split": 15,
+            "hash": 30
+          }
+        },
+        "256000": {
+          "fixed_zero": true,
+          "broken_positive": true,
+          "fixed": {
+            "leaf": 0,
+            "split": 0,
+            "hash": 0
+          },
+          "broken": {
+            "leaf": 126,
+            "split": 63,
+            "hash": 126
+          }
+        },
+        "2000000": {
+          "fixed_zero": true,
+          "broken_positive": true,
+          "fixed": {
+            "leaf": 0,
+            "split": 0,
+            "hash": 0
+          },
+          "broken": {
+            "leaf": 1022,
+            "split": 511,
+            "hash": 1022
+          }
+        }
+      }
+    },
+    "iii_wall_clock": {
+      "pass": true,
+      "reference_n": 2000000,
+      "ref_fixed_mean_ms": 0.5350001156330109,
+      "ref_fixed_max_ms": 5.0,
+      "ref_speedup": 732.9447947783278,
+      "speedup_min": 100.0,
+      "per_size_ge_256k": {
+        "256000": {
+          "speedup_mean": 735.2986685586076,
+          "pass": true
+        },
+        "2000000": {
+          "speedup_mean": 732.9447947783278,
+          "pass": true
+        }
+      }
+    },
+    "iv_scaling_descriptive": {
+      "broken_slope_loglog": 1.0300610715499852,
+      "fixed_slope_loglog_fullsweep": 1.4095606429669452,
+      "fixed_slope_loglog_ge1M": null,
+      "fixed_oN_basis": "operation-count guard (0 re-hash, single pass); fixed wall-clock slope is descriptive only -- sub-ms points are timer-floor dominated (recorded decision).",
+      "gating": "descriptive / non-gating"
+    },
+    "v_mean_std_reported": true,
+    "verdict": "PASS",
+    "gates_note": "Verdict gates on (i) HARD, (ii), (iii) per LOGBOOK 'Failure of (ii)/(iii) -> S4 stays REFRAMED' and (i) HARD. (iv) descriptive; (v) format."
+  }
+}

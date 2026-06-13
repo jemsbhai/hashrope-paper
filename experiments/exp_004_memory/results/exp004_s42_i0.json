@@ -1,0 +1,541 @@
+{
+  "experiment": "exp004_memory",
+  "seed": 42,
+  "invocation": 0,
+  "corpus_sha256_16": "fda6a43a3fe34184",
+  "env": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.2",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 32,
+    "hashrope_version": "0.2.2",
+    "hashrope_file": "E:\\data\\code\\claudecode\\hashrope\\packages\\python\\hashrope\\__init__.py"
+  },
+  "git": {
+    "sha": "a19a4c7cdb056bc08a5c63c8745d6db573c536d5",
+    "dirty": true
+  },
+  "timestamp": "2026-06-12T02:13:06.212743+00:00",
+  "cells": [
+    {
+      "N": 64000,
+      "B": 50,
+      "thought_bytes": 128,
+      "base_weight": 16,
+      "base_node_count": 31,
+      "base_by_type": {
+        "Leaf": 16,
+        "Internal": 15,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 34556,
+        "per_fork_delta_bytes": 691.12,
+        "unique_nodes": 281,
+        "by_type": {
+          "Leaf": 66,
+          "Internal": 215,
+          "RepeatNode": 0
+        },
+        "total_reachable": 481,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.02780009526759386
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 218508,
+        "per_fork_delta_bytes": 4370.16,
+        "unique_nodes": 1681,
+        "by_type": {
+          "Leaf": 866,
+          "Internal": 815,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1681,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.15009997878223658
+      },
+      "compression_ratio_mem": 6.323301308021762,
+      "sharing_ratio_nodes": 5.98220640569395
+    },
+    {
+      "N": 256000,
+      "B": 50,
+      "thought_bytes": 128,
+      "base_weight": 63,
+      "base_node_count": 125,
+      "base_by_type": {
+        "Leaf": 63,
+        "Internal": 62,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 48752,
+        "per_fork_delta_bytes": 975.04,
+        "unique_nodes": 475,
+        "by_type": {
+          "Leaf": 113,
+          "Internal": 362,
+          "RepeatNode": 0
+        },
+        "total_reachable": 775,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03460003063082695
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 460128,
+        "per_fork_delta_bytes": 9202.56,
+        "unique_nodes": 6475,
+        "by_type": {
+          "Leaf": 3263,
+          "Internal": 3212,
+          "RepeatNode": 0
+        },
+        "total_reachable": 6475,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.53909991402179
+      },
+      "compression_ratio_mem": 9.438135871348868,
+      "sharing_ratio_nodes": 13.631578947368421
+    },
+    {
+      "N": 1000000,
+      "B": 50,
+      "thought_bytes": 128,
+      "base_weight": 245,
+      "base_node_count": 489,
+      "base_by_type": {
+        "Leaf": 245,
+        "Internal": 244,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 62840,
+        "per_fork_delta_bytes": 1256.8,
+        "unique_nodes": 939,
+        "by_type": {
+          "Leaf": 295,
+          "Internal": 644,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1339,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03590004052966833
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 1757832,
+        "per_fork_delta_bytes": 35156.64,
+        "unique_nodes": 25039,
+        "by_type": {
+          "Leaf": 12545,
+          "Internal": 12494,
+          "RepeatNode": 0
+        },
+        "total_reachable": 25039,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 2.06540001090616
+      },
+      "compression_ratio_mem": 27.973138128580523,
+      "sharing_ratio_nodes": 26.66560170394036
+    },
+    {
+      "N": 2000000,
+      "B": 1,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 1860,
+        "per_fork_delta_bytes": 1860.0,
+        "unique_nodes": 987,
+        "by_type": {
+          "Leaf": 490,
+          "Internal": 497,
+          "RepeatNode": 0
+        },
+        "total_reachable": 996,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.05079992115497589
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 168628,
+        "per_fork_delta_bytes": 168628.0,
+        "unique_nodes": 1956,
+        "by_type": {
+          "Leaf": 979,
+          "Internal": 977,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1956,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.476499976590276
+      },
+      "compression_ratio_mem": 90.66021505376344,
+      "sharing_ratio_nodes": 1.9817629179331306
+    },
+    {
+      "N": 2000000,
+      "B": 2,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 3192,
+        "per_fork_delta_bytes": 1596.0,
+        "unique_nodes": 997,
+        "by_type": {
+          "Leaf": 491,
+          "Internal": 506,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1015,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.04030007403343916
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 139480,
+        "per_fork_delta_bytes": 69740.0,
+        "unique_nodes": 2935,
+        "by_type": {
+          "Leaf": 1469,
+          "Internal": 1466,
+          "RepeatNode": 0
+        },
+        "total_reachable": 2935,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.44479996804148
+      },
+      "compression_ratio_mem": 43.69674185463659,
+      "sharing_ratio_nodes": 2.9438314944834505
+    },
+    {
+      "N": 2000000,
+      "B": 5,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 7392,
+        "per_fork_delta_bytes": 1478.4,
+        "unique_nodes": 1027,
+        "by_type": {
+          "Leaf": 494,
+          "Internal": 533,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1072,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.038899946957826614
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 341248,
+        "per_fork_delta_bytes": 68249.6,
+        "unique_nodes": 5872,
+        "by_type": {
+          "Leaf": 2939,
+          "Internal": 2933,
+          "RepeatNode": 0
+        },
+        "total_reachable": 5872,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.1767000220716
+      },
+      "compression_ratio_mem": 46.16450216450217,
+      "sharing_ratio_nodes": 5.717624148003895
+    },
+    {
+      "N": 2000000,
+      "B": 10,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 14440,
+        "per_fork_delta_bytes": 1444.0,
+        "unique_nodes": 1077,
+        "by_type": {
+          "Leaf": 499,
+          "Internal": 578,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1167,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.038100057281553745
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 1077704,
+        "per_fork_delta_bytes": 107770.4,
+        "unique_nodes": 10767,
+        "by_type": {
+          "Leaf": 5389,
+          "Internal": 5378,
+          "RepeatNode": 0
+        },
+        "total_reachable": 10767,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.230950027704239
+      },
+      "compression_ratio_mem": 74.63324099722992,
+      "sharing_ratio_nodes": 9.997214484679665
+    },
+    {
+      "N": 2000000,
+      "B": 25,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 35716,
+        "per_fork_delta_bytes": 1428.64,
+        "unique_nodes": 1227,
+        "by_type": {
+          "Leaf": 514,
+          "Internal": 713,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1452,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03820005804300308
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 1981564,
+        "per_fork_delta_bytes": 79262.56,
+        "unique_nodes": 25452,
+        "by_type": {
+          "Leaf": 12739,
+          "Internal": 12713,
+          "RepeatNode": 0
+        },
+        "total_reachable": 25452,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.104899941012263
+      },
+      "compression_ratio_mem": 55.48112890581252,
+      "sharing_ratio_nodes": 20.74327628361858
+    },
+    {
+      "N": 2000000,
+      "B": 50,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 71156,
+        "per_fork_delta_bytes": 1423.12,
+        "unique_nodes": 1477,
+        "by_type": {
+          "Leaf": 539,
+          "Internal": 938,
+          "RepeatNode": 0
+        },
+        "total_reachable": 1927,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03615010064095259
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 3623860,
+        "per_fork_delta_bytes": 72477.2,
+        "unique_nodes": 49927,
+        "by_type": {
+          "Leaf": 24989,
+          "Internal": 24938,
+          "RepeatNode": 0
+        },
+        "total_reachable": 49927,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.195999936200678
+      },
+      "compression_ratio_mem": 50.92838270841531,
+      "sharing_ratio_nodes": 33.80297901150982
+    },
+    {
+      "N": 2000000,
+      "B": 100,
+      "thought_bytes": 128,
+      "base_weight": 489,
+      "base_node_count": 977,
+      "base_by_type": {
+        "Leaf": 489,
+        "Internal": 488,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 142184,
+        "per_fork_delta_bytes": 1421.84,
+        "unique_nodes": 1977,
+        "by_type": {
+          "Leaf": 589,
+          "Internal": 1388,
+          "RepeatNode": 0
+        },
+        "total_reachable": 2877,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03679981455206871
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 7132656,
+        "per_fork_delta_bytes": 71326.56,
+        "unique_nodes": 98877,
+        "by_type": {
+          "Leaf": 49489,
+          "Internal": 49388,
+          "RepeatNode": 0
+        },
+        "total_reachable": 98877,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 4.243899951688945
+      },
+      "compression_ratio_mem": 50.16496933550892,
+      "sharing_ratio_nodes": 50.013657056145675
+    },
+    {
+      "N": 4000000,
+      "B": 50,
+      "thought_bytes": 128,
+      "base_weight": 977,
+      "base_node_count": 1953,
+      "base_by_type": {
+        "Leaf": 977,
+        "Internal": 976,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 79876,
+        "per_fork_delta_bytes": 1597.52,
+        "unique_nodes": 2503,
+        "by_type": {
+          "Leaf": 1027,
+          "Internal": 1476,
+          "RepeatNode": 0
+        },
+        "total_reachable": 3003,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03855000250041485
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 7092348,
+        "per_fork_delta_bytes": 141846.96,
+        "unique_nodes": 99703,
+        "by_type": {
+          "Leaf": 49877,
+          "Internal": 49826,
+          "RepeatNode": 0
+        },
+        "total_reachable": 99703,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 8.403849904425442
+      },
+      "compression_ratio_mem": 88.7919775652261,
+      "sharing_ratio_nodes": 39.833399920095886
+    },
+    {
+      "N": 8000000,
+      "B": 50,
+      "thought_bytes": 128,
+      "base_weight": 1954,
+      "base_node_count": 3907,
+      "base_by_type": {
+        "Leaf": 1954,
+        "Internal": 1953,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 81512,
+        "per_fork_delta_bytes": 1630.24,
+        "unique_nodes": 4457,
+        "by_type": {
+          "Leaf": 2004,
+          "Internal": 2453,
+          "RepeatNode": 0
+        },
+        "total_reachable": 4957,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.036400044336915016
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 13737584,
+        "per_fork_delta_bytes": 274751.68,
+        "unique_nodes": 199357,
+        "by_type": {
+          "Leaf": 99704,
+          "Internal": 99653,
+          "RepeatNode": 0
+        },
+        "total_reachable": 199357,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 16.677199979312718
+      },
+      "compression_ratio_mem": 168.53449798802632,
+      "sharing_ratio_nodes": 44.72896567197667
+    },
+    {
+      "N": 8000000,
+      "B": 100,
+      "thought_bytes": 128,
+      "base_weight": 1954,
+      "base_node_count": 3907,
+      "base_by_type": {
+        "Leaf": 1954,
+        "Internal": 1953,
+        "RepeatNode": 0
+      },
+      "rope": {
+        "tracemalloc_delta_bytes": 162900,
+        "per_fork_delta_bytes": 1629.0,
+        "unique_nodes": 5007,
+        "by_type": {
+          "Leaf": 2054,
+          "Internal": 2953,
+          "RepeatNode": 0
+        },
+        "total_reachable": 6007,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 0.03550003748387098
+      },
+      "deepcopy": {
+        "tracemalloc_delta_bytes": 27070172,
+        "per_fork_delta_bytes": 270701.72,
+        "unique_nodes": 394807,
+        "by_type": {
+          "Leaf": 197454,
+          "Internal": 197353,
+          "RepeatNode": 0
+        },
+        "total_reachable": 394807,
+        "correctness_mismatches": 0,
+        "per_fork_time_ms_median": 17.044750158675015
+      },
+      "compression_ratio_mem": 166.1766236955187,
+      "sharing_ratio_nodes": 78.85100858797684
+    }
+  ]
+}

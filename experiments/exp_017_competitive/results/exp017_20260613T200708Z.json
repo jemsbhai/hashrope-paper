@@ -1,0 +1,257 @@
+{
+  "experiment": "EXP-017",
+  "claim": "B1",
+  "description": "Competitive prefix-identification: hashrope LCP vs SGLang RadixCache v0.1.17 vs numpy flat scan",
+  "env": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.2",
+    "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "hashrope_version": "0.2.2",
+    "numpy_version": "2.0.2",
+    "torch_version": "2.6.0+cu124",
+    "timestamp": "2026-06-13T20:06:51.125307+00:00"
+  },
+  "git_sha": "2f9408a77c2d0155b668debd28dce723019aebca",
+  "git_dirty": true,
+  "corpus_sha": {
+    "42": "fda6a43a3fe34184"
+  },
+  "radix_sha256": "42749c7cf0f3cbf42066dd273360730c8fe10e2a21983a49f102a500702ca71c",
+  "seeds": [
+    42
+  ],
+  "invocations": 1,
+  "reps": 2,
+  "n_runs": 1,
+  "controlled": {
+    "1000": {
+      "L": 1000,
+      "n_runs": 1,
+      "radix_ms": {
+        "mean": 0.05869999949936755,
+        "std": 0.0,
+        "min": 0.05869999949936755,
+        "max": 0.05869999949936755,
+        "n": 1,
+        "values": [
+          0.05869999949936755
+        ]
+      },
+      "hashrope_ms": {
+        "mean": 19.88350000101491,
+        "std": 0.0,
+        "min": 19.88350000101491,
+        "max": 19.88350000101491,
+        "n": 1,
+        "values": [
+          19.88350000101491
+        ]
+      },
+      "flat_ms": {
+        "mean": 0.0077500008046627045,
+        "std": 0.0,
+        "min": 0.0077500008046627045,
+        "max": 0.0077500008046627045,
+        "n": 1,
+        "values": [
+          0.0077500008046627045
+        ]
+      },
+      "correctness_all_ok": true,
+      "mismatches": 0,
+      "hashrope_step_all_ok": true,
+      "radix_comp_all_ok": true,
+      "hashrope_wins": false,
+      "hashrope_pairwise_wins": 0,
+      "radix_pairwise_wins": 1,
+      "speedup_hashrope_over_radix": 0.002952196519544916
+    },
+    "4000": {
+      "L": 4000,
+      "n_runs": 1,
+      "radix_ms": {
+        "mean": 0.13035000301897526,
+        "std": 0.0,
+        "min": 0.13035000301897526,
+        "max": 0.13035000301897526,
+        "n": 1,
+        "values": [
+          0.13035000301897526
+        ]
+      },
+      "hashrope_ms": {
+        "mean": 18.345100001170067,
+        "std": 0.0,
+        "min": 18.345100001170067,
+        "max": 18.345100001170067,
+        "n": 1,
+        "values": [
+          18.345100001170067
+        ]
+      },
+      "flat_ms": {
+        "mean": 0.005000001692678779,
+        "std": 0.0,
+        "min": 0.005000001692678779,
+        "max": 0.005000001692678779,
+        "n": 1,
+        "values": [
+          0.005000001692678779
+        ]
+      },
+      "correctness_all_ok": true,
+      "mismatches": 0,
+      "hashrope_step_all_ok": true,
+      "radix_comp_all_ok": true,
+      "hashrope_wins": false,
+      "hashrope_pairwise_wins": 0,
+      "radix_pairwise_wins": 1,
+      "speedup_hashrope_over_radix": 0.007105439763787682
+    },
+    "16000": {
+      "L": 16000,
+      "n_runs": 1,
+      "radix_ms": {
+        "mean": 0.44799999886890873,
+        "std": 0.0,
+        "min": 0.44799999886890873,
+        "max": 0.44799999886890873,
+        "n": 1,
+        "values": [
+          0.44799999886890873
+        ]
+      },
+      "hashrope_ms": {
+        "mean": 14.644300001236843,
+        "std": 0.0,
+        "min": 14.644300001236843,
+        "max": 14.644300001236843,
+        "n": 1,
+        "values": [
+          14.644300001236843
+        ]
+      },
+      "flat_ms": {
+        "mean": 0.01174999852082692,
+        "std": 0.0,
+        "min": 0.01174999852082692,
+        "max": 0.01174999852082692,
+        "n": 1,
+        "values": [
+          0.01174999852082692
+        ]
+      },
+      "correctness_all_ok": true,
+      "mismatches": 0,
+      "hashrope_step_all_ok": true,
+      "radix_comp_all_ok": true,
+      "hashrope_wins": false,
+      "hashrope_pairwise_wins": 0,
+      "radix_pairwise_wins": 1,
+      "speedup_hashrope_over_radix": 0.030592107429584965
+    }
+  },
+  "crossover_L_star": null,
+  "real_pairs": {
+    "sharegpt_sample.jsonl": {
+      "n_runs": 1,
+      "all_correct": true,
+      "total_mismatches": 0,
+      "radix_ms_across_runs": {
+        "mean": 0.03483499967842363,
+        "std": 0.0,
+        "min": 0.03483499967842363,
+        "max": 0.03483499967842363,
+        "n": 1,
+        "values": [
+          0.03483499967842363
+        ]
+      },
+      "hashrope_ms_across_runs": {
+        "mean": 6.598985000164248,
+        "std": 0.0,
+        "min": 6.598985000164248,
+        "max": 6.598985000164248,
+        "n": 1,
+        "values": [
+          6.598985000164248
+        ]
+      },
+      "flat_ms_across_runs": {
+        "mean": 0.00975500006461516,
+        "std": 0.0,
+        "min": 0.00975500006461516,
+        "max": 0.00975500006461516,
+        "n": 1,
+        "values": [
+          0.00975500006461516
+        ]
+      }
+    },
+    "lmsys_sample.jsonl": {
+      "n_runs": 1,
+      "all_correct": true,
+      "total_mismatches": 0,
+      "radix_ms_across_runs": {
+        "mean": 0.016825000784592703,
+        "std": 0.0,
+        "min": 0.016825000784592703,
+        "max": 0.016825000784592703,
+        "n": 1,
+        "values": [
+          0.016825000784592703
+        ]
+      },
+      "hashrope_ms_across_runs": {
+        "mean": 3.8383700004487764,
+        "std": 0.0,
+        "min": 3.8383700004487764,
+        "max": 3.8383700004487764,
+        "n": 1,
+        "values": [
+          3.8383700004487764
+        ]
+      },
+      "flat_ms_across_runs": {
+        "mean": 0.004070000068168156,
+        "std": 0.0,
+        "min": 0.004070000068168156,
+        "max": 0.004070000068168156,
+        "n": 1,
+        "values": [
+          0.004070000068168156
+        ]
+      }
+    }
+  },
+  "k_sweep": {},
+  "criterion": {
+    "verdict": "NOT SUPPORTED",
+    "i_correctness": {
+      "ok": true,
+      "ctrl": true,
+      "real": true,
+      "k": true
+    },
+    "ii_guards": {
+      "ok": true,
+      "hashrope_step": true,
+      "radix_comp": true
+    },
+    "iii_crossover": {
+      "ok": false,
+      "detail": "no crossover found"
+    },
+    "iv_long_context": {
+      "ok": false,
+      "detail": {
+        "512000": "not in grid",
+        "1000000": "not in grid"
+      }
+    },
+    "v_sample_size": {
+      "ok": false,
+      "n_runs": 1
+    }
+  }
+}

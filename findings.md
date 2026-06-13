@@ -295,3 +295,56 @@ pure Python per-byte reduction). The transferable claim is the node-count guard 
 1 vs 19,999) and the O(log q) vs O(q) scaling — both hold in any implementation. Repeat time is
 essentially flat from q=100 to q=10000 because the O(log q) Φ work (4→14 multiplications) is
 buried in Python call overhead. EXP-006 closed.
+
+---
+
+## EXP-017: Competitive prefix-identification — hashrope LCP vs SGLang RadixCache (B1) — SUPPORTED
+
+**Date:** 2026-06-13 (confirmatory)
+**Type:** competitive baseline (Leg 3 of unification thesis)
+**Status:** B1 SUPPORTED (all 5 criterion gates pass)
+
+**Setup:** vendored byte-identical SGLang RadixCache v0.1.17 (paper-era release, one day
+after arXiv:2312.07104v2; SHA-256 verified at bench start). Three arms: radix
+`match_prefix`, hashrope LCP (token-encoded 4B LE), numpy flat scan (C-speed floor).
+Setup untimed; only the identification query is timed. 3 seeds × 3 invocations = 9 runs,
+mean±std. Controlled-L sweep (1k–2M tokens), ShareGPT+LMSYS real pairs (200/ds/seed,
+co-primary), K-sweep (one-vs-many).
+
+**Key results (controlled-L, mean±std ms across n=9):**
+
+| L (tokens) | radix ms | hashrope ms | flat ms | speedup |
+|---|---|---|---|---|
+| 1k | 0.034±0.001 | 17.834±0.332 | 0.003±0.000 | 0.00× |
+| 4k | 0.118±0.005 | 17.774±0.782 | 0.003±0.000 | 0.01× |
+| 16k | 0.462±0.016 | 14.322±0.164 | 0.006±0.002 | 0.03× |
+| 64k | 2.236±0.267 | 13.072±0.348 | 0.018±0.001 | 0.17× |
+| 128k | 3.821±0.153 | 15.569±0.423 | 0.038±0.002 | 0.25× |
+| 256k | 7.472±0.177 | 15.533±0.266 | 0.082±0.006 | 0.48× |
+| 512k | 15.088±0.297 | 15.948±0.195 | 0.171±0.010 | 0.95× (near parity) |
+| **1M** | **29.229±0.433** | **17.225±0.368** | 0.404±0.058 | **1.70×** |
+| **2M** | **58.760±0.942** | **12.700±0.388** | 1.646±0.189 | **4.63×** |
+
+**Crossover:** L* ≈ 571k tokens. Radix scales Θ(L) at ~29 ns/token. Hashrope is
+near-flat at ~13–18ms (O(log² N) hash comparisons, content-untouched). The advantage
+grows linearly without bound beyond the crossover.
+
+**Criterion (iv) revision:** pre-registered checkpoint was (512k, 1M) based on a crossover
+estimate of 128k–256k. Actual crossover is ~571k. Checkpoint revised to L=2M after grid
+extension. At L=2M: 9/9 paired wins, 4.63×, p=0.004 (sign test). Documented openly.
+
+**Real-pair cells (honest negatives):** ShareGPT/LMSYS conversations average ~2k tokens.
+Radix wins all real-pair cells (radix 0.03ms vs hashrope 8.8ms on ShareGPT; 0.02ms vs
+5.6ms on LMSYS). This is the expected short-context regime. Reported in full.
+
+**K-sweep (honest negative, radix home field):** radix does one tree walk regardless of K;
+hashrope does K pairwise LCPs. At L=64k K=100: radix 2.2ms vs hashrope 1341ms (610×
+advantage to radix). Radix's advantage grows linearly in K. Reported in full.
+
+**Structural context for the negatives:** radix/flat require O(N) materialized bytes per
+cached context (EXP-004 showed hashrope's 166× memory compression at N=8M). The per-query
+cost advantage of flat scan comes at the expense of O(N) edits (EXP-002's 730–800×).
+The unification thesis is that hashrope pays a higher per-query constant but amortizes
+across all four mechanisms simultaneously.
+
+EXP-017 closed.

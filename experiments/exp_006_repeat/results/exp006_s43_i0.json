@@ -1,0 +1,220 @@
+{
+  "experiment": "exp006_repeat",
+  "seed": 43,
+  "invocation": 0,
+  "corpus_sha256_16": "85ca58707bae1597",
+  "env": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.2",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 32,
+    "hashrope_version": "0.2.2"
+  },
+  "git": {
+    "sha": "23e8eb691d29e1846db4a406a2c87a16573f8daf",
+    "dirty": true
+  },
+  "timestamp": "2026-06-12T09:58:16.211413+00:00",
+  "cells": [
+    {
+      "q": 1,
+      "unit_size": 4096,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 1,
+        "time_ms_median": 0.000200001522898674,
+        "tracemalloc_bytes": 624,
+        "hash": 1562548979601006261
+      },
+      "naive": {
+        "unique_nodes": 1,
+        "time_ms_median": 0.7221000269055367,
+        "tracemalloc_bytes": 724,
+        "hash": 1562548979601006261
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 1.0,
+      "mem_compression": 1.1602564102564104,
+      "time_speedup": 3610.472642607683
+    },
+    {
+      "q": 10,
+      "unit_size": 4096,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 2,
+        "time_ms_median": 0.003200024366378784,
+        "tracemalloc_bytes": 704,
+        "hash": 2136653832015166246
+      },
+      "naive": {
+        "unique_nodes": 19,
+        "time_ms_median": 7.941700052469969,
+        "tracemalloc_bytes": 44430,
+        "hash": 2136653832015166246
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 9.5,
+      "mem_compression": 63.11079545454545,
+      "time_speedup": 2481.76236903376
+    },
+    {
+      "q": 100,
+      "unit_size": 4096,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 2,
+        "time_ms_median": 0.005600042641162872,
+        "tracemalloc_bytes": 620,
+        "hash": 633876892761413650
+      },
+      "naive": {
+        "unique_nodes": 199,
+        "time_ms_median": 79.89579997956753,
+        "tracemalloc_bytes": 440720,
+        "hash": 633876892761413650
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 99.5,
+      "mem_compression": 710.8387096774194,
+      "time_speedup": 14266.998503242974
+    },
+    {
+      "q": 1000,
+      "unit_size": 128,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 2,
+        "time_ms_median": 0.0078000593930482864,
+        "tracemalloc_bytes": 588,
+        "hash": 967417256785620476
+      },
+      "naive": {
+        "unique_nodes": 63,
+        "time_ms_median": 23.554000072181225,
+        "tracemalloc_bytes": 138080,
+        "hash": 967417256785620476
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 31.5,
+      "mem_compression": 234.82993197278913,
+      "time_speedup": 3019.720605355064
+    },
+    {
+      "q": 1000,
+      "unit_size": 1024,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 2,
+        "time_ms_median": 0.008200062438845634,
+        "tracemalloc_bytes": 508,
+        "hash": 1000543069754807036
+      },
+      "naive": {
+        "unique_nodes": 499,
+        "time_ms_median": 214.7007999010384,
+        "tracemalloc_bytes": 1100362,
+        "hash": 1000543069754807036
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 249.5,
+      "mem_compression": 2166.066929133858,
+      "time_speedup": 26182.825009227974
+    },
+    {
+      "q": 1000,
+      "unit_size": 4096,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 2,
+        "time_ms_median": 0.021300045773386955,
+        "tracemalloc_bytes": 448,
+        "hash": 1273559344035899338
+      },
+      "naive": {
+        "unique_nodes": 1999,
+        "time_ms_median": 1138.489600038156,
+        "tracemalloc_bytes": 4404408,
+        "hash": 1273559344035899338
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 999.5,
+      "mem_compression": 9831.267857142857,
+      "time_speedup": 53450.10110075096
+    },
+    {
+      "q": 1000,
+      "unit_size": 16384,
+      "unit_nodes": 7,
+      "repeat": {
+        "unique_nodes": 8,
+        "time_ms_median": 0.008200062438845634,
+        "tracemalloc_bytes": 364,
+        "hash": 690970342610193585
+      },
+      "naive": {
+        "unique_nodes": 7999,
+        "time_ms_median": 4480.640500085428,
+        "tracemalloc_bytes": 17604828,
+        "hash": 690970342610193585
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 999.875,
+      "mem_compression": 48364.91208791209,
+      "time_speedup": 546415.412504614
+    },
+    {
+      "q": 10000,
+      "unit_size": 4096,
+      "unit_nodes": 1,
+      "repeat": {
+        "unique_nodes": 2,
+        "time_ms_median": 0.009800074622035027,
+        "tracemalloc_bytes": 324,
+        "hash": 177577717291338832
+      },
+      "naive": {
+        "unique_nodes": 19999,
+        "time_ms_median": 11329.545399872586,
+        "tracemalloc_bytes": 44043384,
+        "hash": 177577717291338832
+      },
+      "correctness": {
+        "bytes_match": true,
+        "hash_match": true,
+        "mismatch": false
+      },
+      "node_compression": 9999.5,
+      "mem_compression": 135936.37037037036,
+      "time_speedup": 1156067.2583450144
+    }
+  ]
+}
