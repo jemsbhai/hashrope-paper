@@ -1677,3 +1677,51 @@ hold in any implementation, with smaller constants in Rust.
   data/canonical/tot_traces_gptoss120b_s*.jsonl
 - Bench: scripts/exp019_bench.py ; results experiments/exp_019_branch/results/
 - Figure: scripts/exp019_figure.py ; figures/exp019_*.{png,pdf}
+
+---
+
+## EXP-019 — Addendum A: gated-metric referent locked (branch-creation)
+
+**Date:** 2026-06-13 (pre-data; before the Milestone A confirmatory run).
+**Status:** append-only clarification of the EXP-019 promotion criterion above.
+The plan, hypothesis, IV/DV, and thresholds are unchanged. Decided and committed
+WITH the bench, BEFORE it runs.
+
+The Milestone A bench (`scripts/exp019_bench.py`) measures three latency
+decompositions per (N, block size), and reports all of them:
+
+  1. **bare structural fork** — hashrope shares the immutable root (O(1); the
+     divergence cost is *deferred* to the first append) vs PagedAttention copies
+     the per-sequence block table + increfs each shared block (O(ceil(N/B))).
+  2. **branch-creation** — fork + the first divergent step: hashrope
+     `rope_concat(base, Leaf(step))` (O(log w)) vs PagedAttention fork + append
+     the step tokens (O(ceil(N/B)) + O(s)).
+  3. **per-token append** — hashrope O(log w) vs PagedAttention O(1) amortized.
+
+plus the **branching-memory** cell (EXP-004 style).
+
+**Locked referent.** Promotion criteria (iii) [crossover] and (iv) [N=1M win] are
+evaluated against **branch-creation latency**, NOT bare fork. Rationale, fixed
+before any data is seen:
+
+  - Bare fork has *no crossover*: hashrope's O(1) root-share beats PagedAttention
+    at every N because the divergence cost is deferred. Gating there would credit
+    hashrope for work it has not yet done — a reviewer-vulnerable choice.
+  - Branch-creation charges hashrope its full O(log w) spine and still yields a
+    genuine log-vs-linear crossover, so the gated claim is defensible under
+    hostile review.
+  - Bare-fork and per-token append are reported in full as the honest
+    decomposition. Append is a pre-registered **boundary**: PagedAttention is
+    expected to win it (O(1) amortized vs O(log w)); this is reported, not hidden.
+
+This refines the wording of (iii)/(iv) from "fork latency" to "branch-creation
+latency". It does NOT weaken any threshold: a stable crossover N* at reference
+block size 16 is still required, and >=2x speedup AND >=10x branching-memory
+compression (PagedAttention/hashrope, branch_count=5) at N=1M across ALL block
+sizes {8,16,32,64} are still required. The HARD cross-arm byte-identity gate (i)
+and the structural guards (ii) are unchanged.
+
+The **headline emphasis** among the (multiple) metrics on which hashrope wins
+remains an editorial choice to be made from the findings, per the standing
+"get everything first, then decide what to headline" directive. The pass/fail
+verdict is bound to the pre-registered criterion only.

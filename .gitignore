@@ -22,6 +22,10 @@ data/raw/**
 data/processed/**
 !data/processed/.gitkeep
 
+# EXP-019 base-token cache (regenerable from corpus via the bench; not versioned).
+# The data/canonical/*.jsonl datasets ARE versioned; only this token cache is not.
+data/canonical/exp019_base_tokens_s*.npy
+
 # Model / tokenizer caches
 *.bin
 *.safetensors
