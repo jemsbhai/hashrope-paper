@@ -1798,3 +1798,188 @@ Real gpt-oss-120b Game-of-24 ToT traces (Yao et al. beam b=5, depth 3) recorded 
 data/canonical/tot_traces_gptoss120b_s{seed}.jsonl, then replayed through the same
 harness — ecological validity for the branching shape. Not part of the (met)
 Milestone-A gating criterion; adds external validity. Tracked in PROGRAM.md.
+
+## EXP-019 — Milestone B plan: real gpt-oss-120b Game-of-24 ToT traces, replayed (claim B3, supplementary)
+
+**Date:** 2026-06-14 (pre-data; written and locked BEFORE any LLM call and before
+any replay measurement — plan-before-data).
+**Researcher:** Muntaser Syed
+**Type:** computational (LLM trace generation, recorded once; then deterministic replay)
+**Status:** planned (apparatus: generator validated against a mock model; replay bench to follow).
+
+### Standing relative to Milestone A
+
+B3 is **already SUPPORTED** via the EXP-019 **Milestone A** promotion criterion
+(met verbatim: HARD byte-identity 0 mismatches; structural guards; branch-creation
+crossover N* = 16k at reference block 16; at N = 1M every block size {8,16,32,64}
+9/9 paired (p = 0.004), speedup 169x/97x/43x/20x, branching-memory compression
+613x/306x/153x/68x). **Milestone B is SUPPLEMENTARY ecological validity** — it
+replays *real* LLM branching shapes rather than the controlled synthetic ToT
+lattice. It is **not** part of the (met) Milestone-A gating criterion and **cannot
+un-support B3.** If Milestone B's own criterion below is not met (e.g. real trees
+branch too sparsely for the memory threshold at the real beam), it is reported as a
+partial / honest-negative corroboration and B3 remains SUPPORTED on Milestone A.
+
+### Locked decisions (conferred 2026-06-14, before any data)
+
+- **Regime (the central design question): large-shared-prefix-prepended ToT as the
+  headline, plus bare puzzle tokens (P = 0) as an honest lower anchor, so Milestone
+  B SPANS the crossover on real tree shapes.** Game-of-24 puzzles + ToT thoughts are
+  short (move lines ~11-13 gpt2 tokens; accumulated path ~30-45 tokens), far below
+  N* = 16k. Bare Game-of-24 therefore sits in the sub-crossover regime where
+  PagedAttention wins branch-creation latency (consistent with Milestone A's
+  pre-registered boundary). To exhibit the LLM-relevant regime, a large shared
+  prefix (standing in for an agent's system prompt + tool defs + conversation
+  history, which all ToT branches inherit) is PREPENDED at replay to push the base
+  context across the crossover. The prefix is the context-size axis; its *content*
+  is immaterial to the structural and byte-identity claims. The ecological
+  contribution is the **real tree shape** (variable branching, variable depth, real
+  thought-token lengths) and byte-identity on it.
+- **Controller (Yao et al. 2023):** BFS, beam b = 5, depth D = 3 (4 -> 3 -> 2 -> 1
+  numbers). Single PROPOSE call lists candidate moves per frontier node; each
+  non-terminal candidate scored by VALUE.
+- **n_eval = 1, value_temp = 0.7, propose_temp = 0.7.** Rationale (Muntaser):
+  Milestone A already carries the empirical gains under its met gating criterion, so
+  a single VALUE sample is faithful enough for a supplementary milestone; value_temp
+  = 0.7 (NOT 0) is the deliberate choice that keeps the 3 trace seeds genuinely
+  distinct, because the probe showed gpt-oss's PROPOSE step is near-deterministic
+  (it enumerates the full ~36-move space), so inter-seed diversity lives in the
+  stochastic VALUE scoring and beam ties, not in propose.
+- **Subset: ranks 901-925 (25 puzzles)** of the canonical Yao test set (901-1000),
+  the SAME fixed subset across all 3 seeds (clean pairing). **3 trace seeds {42, 43,
+  44}**, each ALSO indexing the replay prefix (corpus_s{seed}), so LLM sampling and
+  prefix are tied per seed.
+- **Prefix-size sweep at replay: P in {0, 4000, 16000, 64000, 256000}** prepended
+  corpus tokens (P = 0 bare anchor; 16k ~ Milestone A N*; 256k deep long-context).
+  No P = 1M (deferred; Milestone A already carries 1M).
+
+### gpt-oss-120b probe findings (tools/smoke_ollama.py, 2026-06-14, locked into the design)
+
+- Endpoint /api/chat, stream=false, returns clean JSON; done_reason="stop" at
+  num_predict=4096 (no truncation). Latency: PROPOSE ~14.6 s, VALUE ~1.3 s
+  (cloud-served gpt-oss:120b-cloud; the response normalizes `model` to
+  "gpt-oss:120b" — both recorded).
+- **Response shape: message.content carries the clean final answer; reasoning is in
+  a SEPARATE message.thinking field.** The parser reads message.content ONLY.
+- PROPOSE output matched the requested grammar exactly:
+  `a op b = c (remaining: ...)`, with floats, negatives, and trailing whitespace —
+  all handled by the move regex. VALUE returns the single word ("sure").
+
+### Generation: tools/gen_tot_traces.py (validated against a mock; user runs the real generation)
+
+- **State tracking trusts the LLM's parsed `remaining` numbers (the ToT
+  scratchpad), NOT exact-Fraction recomputation.** Intermediate Game-of-24 states
+  contain non-terminating decimals the model prints rounded (e.g. 0.6666666667), so
+  matching printed operands back to exact Fractions at depth >= 2 is fragile; trusting
+  the scratchpad is *more* faithful to Yao et al. (who track the LLM's printed "left"
+  numbers). **Exact `fractions.Fraction` is used ONLY at the terminal solution check
+  (single number == 24).** Game-of-24 arithmetic correctness does NOT enter the gated
+  byte-identity replay; solve-rate is advisory.
+- **Parsing:** move grammar regex drops non-conforming lines (prose/headers/blanks);
+  duplicate canonical move lines deduped per parent (first-occurrence order). VALUE
+  word mapped sure=2 / likely=1 / impossible=0; unparsed -> 0. Global top-b survive
+  (stable tie-break by generation order). Depth-D candidates are terminal (no VALUE
+  call); solution-checked.
+- **Tokenization (fidelity to Milestone A / EXP-017):** thought_text -> thought_tokens
+  via `transformers.AutoTokenizer.from_pretrained("gpt2")`,
+  `tok(text, add_special_tokens=False)["input_ids"]` — the IDENTICAL call form as
+  scripts/exp019_bench.py:ensure_base_tokens. Tokens are SEALED into the artifact so
+  replay is fully deterministic and needs no tokenizer.
+- **Robustness:** per-puzzle checkpoint/resume (one JSONL line per completed puzzle;
+  a resumed run skips puzzles already present). Retry-with-backoff (4 attempts) on
+  Ollama errors; a failure surviving retries ABORTS the run cleanly WITHOUT writing a
+  degenerate tree (resume continues from that puzzle), so every recorded line is a
+  complete tree. Unparseable model responses degrade gracefully (sparse subtree,
+  visible in the node count). An in-process `--mock` model gives a zero-cost offline
+  dry run of the tree logic.
+- **Trace JSONL schema** (data/canonical/tot_traces_gptoss120b_s{seed}.jsonl,
+  VERSIONED, append-only, never overwritten), one self-describing line per puzzle:
+  `puzzle_id` (= rank), `puzzle`, `seed`, `model_requested`, `endpoint`,
+  `sampling{propose_temp,value_temp,n_eval}`, `beam_width`, `max_depth`, `tokenizer`,
+  `token_encoding`, `nodes[{id, parent_id, depth, thought_text, thought_tokens,
+  state_numbers, value_label, value_score, in_beam, is_terminal, is_solution}]`,
+  `beams{depth: [kept node ids]}`, `solved`, `solution_path`, `n_llm_calls`,
+  `gen_timestamp`. The prefix is NOT stored here; it is added at replay.
+
+### Replay: scripts/exp019_milestoneB_bench.py (apparatus to follow; design locked here)
+
+- **New script** (orchestrator + worker, EXP-004/017/019A template), reusing
+  src/branch_bench.py (hr_*/pa_* wrappers) and src/memory.py (count_unique_nodes)
+  UNCHANGED. Milestone A's bench (scripts/exp019_bench.py) and its results are frozen
+  and untouched. Results -> experiments/exp_019_branch/results/
+  exp019_milestoneB_latest.json (+ timestamped + per-run).
+- **Prefix** = real corpus_s{seed} gpt2 tokens (the SAME source as Milestone A's
+  base; reuses the cached .npy), prepended to each ToT base context. Base context at
+  the root = prefix_tokens + puzzle_tokens; a node v's context = base + concatenation
+  of the path's thought_tokens (root..v).
+- **Replay mapping:** each recorded node expansion = branch-creation off its parent
+  context: hashrope `hr_branch_create(ctx[parent], thought_tokens[v], h)` vs
+  PagedAttention `pa_branch_create(ctx[parent] seq, thought_tokens[v])` — both in
+  token space (4-byte-LE; EXP-017 convention). **Gated metric = branch-creation**
+  (fork + append the node's thought), consistent with EXP-019 Addendum A; bare fork
+  is NOT gated.
+- **Oracle (HARD byte-identity):** each reconstructed node context materializes
+  (rope_to_bytes / block-table walk) to EXACTLY prefix_tokens + puzzle_tokens +
+  path-thought_tokens (a token-list concatenation, matching Milestone A's
+  expected_after_branch — NOT whole-string re-tokenization; the 4-byte-LE encoding
+  makes token-list concat == byte concat exactly). 0 mismatches, both arms, every
+  node, every P, every block size.
+- **Structural guards (deterministic; carry the asymptotic claim):** per expansion,
+  hashrope new nodes <= ceil(log2 w) + 3 (w = parent leaf count); PagedAttention fork
+  touches exactly ceil(parent_len / B) block-table entries.
+- **Branching memory:** hold the real depth-D beam (<= b = 5 divergent paths) live;
+  tracemalloc delta over the built base (Milestone A measure_memory style).
+  Compression = pa_bytes / hr_bytes.
+- **Latency method:** because a real tree has many distinct expansions, per (P, block
+  size, arm, run) the replay of ALL recorded expansions across the 25 puzzles is
+  timed as ONE batch (paged pool rebuilt per batch to discard the COW leak, as
+  Milestone A), reps=5 -> median; reported metric = batch_time / n_expansions (mean
+  per-expansion branch-creation latency). Pure-Python, interpreter-amplified; the
+  transferable claims are the structural guards and the O(log w) vs O(ceil(N/B))
+  scaling, not the absolute constants.
+- **Error model: n = 9 = 3 trace seeds x 3 replay invocations.** Replay is
+  deterministic, so invocation variance is timer-only on latency and ~0 on
+  structure/memory (reported honestly). mean +/- std across the 9 runs; paired sign
+  test (hr vs pa) on the per-run mean branch-creation latency at each P. Paged block
+  sizes {8, 16, 32, 64}, reference 16 (Milestone A consistency).
+
+### Promotion criterion (verbatim, written before any generation or replay)
+
+Milestone B -> **CORROBORATED** iff, across 3 trace seeds x 3 replay invocations
+(n = 9), on the recorded real Game-of-24 ToT traces (ranks 901-925):
+
+(i)   **[HARD] Correctness:** every reconstructed node context (both arms) == oracle
+      token sequence (prefix + puzzle + path-thoughts), for every node, puzzle,
+      prefix size P, and block size — 0 mismatches. Failure -> Milestone B FAILS
+      outright (investigated; does not touch Milestone A's separate, already-met
+      correctness gate).
+(ii)  **Guards:** per node expansion, hashrope new nodes <= ceil(log2 w) + 3
+      (w = parent leaf count); PagedAttention fork touches ceil(parent_len / B)
+      block-table entries. Failure -> bug hunt, no retrofit.
+(iii) **Crossover on real shapes, consistent with Milestone A:** there exists P* in
+      the swept grid (reference block 16) such that for every P >= P*, hashrope
+      mean + 1 sigma < PagedAttention mean - 1 sigma on aggregate branch-creation
+      latency, and for every P < P*, PagedAttention mean <= hashrope mean; and P* is
+      within one grid step of Milestone A's N* = 16k.
+(iv)  **Large-prefix win at P = 256k, EVERY block size {8,16,32,64}:** hashrope beats
+      PagedAttention on branch-creation latency with paired sign test 9/9 and mean
+      speedup >= 2x, AND branching-memory compression (real beam, <= 5 paths) >= 10x.
+(v)   **Honest sub-crossover reporting:** at P = 0 (bare Game-of-24) and any P < P*,
+      the regime where PagedAttention wins branch-creation latency is reported in
+      FULL, not hidden (consistent with Milestone A's pre-registered boundary).
+(vi)  All numbers reported as mean +/- std (n = 9).
+
+The prefix grid (esp. the P* ~ 16k expectation) may be revised ONCE if it proves off
+(extend the grid, never lower the bar — EXP-017 policy). **B3 remains SUPPORTED on
+Milestone A regardless of the Milestone B verdict.**
+
+### Artifacts
+
+- Trace generator: tools/gen_tot_traces.py (validated against a mock model; smoke
+  probe tools/smoke_ollama.py).
+- Traces (versioned): data/canonical/tot_traces_gptoss120b_s{42,43,44}.jsonl.
+- Replay bench: scripts/exp019_milestoneB_bench.py (to follow); results
+  experiments/exp_019_branch/results/exp019_milestoneB_*.json.
+- Figure: Milestone B replay figure (to follow); figures/exp019_milestoneB_*.{png,pdf}.
+
+---
