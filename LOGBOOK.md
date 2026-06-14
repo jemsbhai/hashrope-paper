@@ -1725,3 +1725,76 @@ The **headline emphasis** among the (multiple) metrics on which hashrope wins
 remains an editorial choice to be made from the findings, per the standing
 "get everything first, then decide what to headline" directive. The pass/fail
 verdict is bound to the pre-registered criterion only.
+
+---
+
+## EXP-019 — Results & Interpretation (Milestone A)
+
+**Date:** 2026-06-13. **Apparatus commit:** 5848110 (bench + Addendum A, committed
+before the run). **Run:** confirmatory, 3 seeds {42,43,44} × 3 invocations = 9
+runs; real gpt2-tokenized corpus (SHA-256[:16] 42=fda6a43a, 43=85ca5870,
+44=dfd645be); hashrope 0.2.2; i9-14900HX (32 logical) / 64 GB. **Data:**
+experiments/exp_019_branch/results/exp019_milestoneA_latest.json (+ per-run
+exp019_run_s{seed}_i{inv}.json). **Figures:** scripts/exp019_figure.py →
+figures/exp019_{branch_create_latency,branch_memory_compression,boundary}.{png,pdf}.
+
+### Verdict: B3 SUPPORTED (Milestone A) — all four criterion clauses met.
+
+(i) **Byte-identity (HARD):** 0 mismatches across all cells/runs; hashrope,
+PagedAttention, and the oracle materialize identical token sequences.
+
+(ii) **Structural guards (deterministic):** hashrope per-branch new nodes ≤
+⌈log₂ leaves⌉+3 at every cell; PagedAttention fork entries == ⌈N/B⌉ exactly.
+
+(iii) **Branch-creation crossover at reference block 16:** N* = 16,000 tokens
+(monotone below). For N < 16k PagedAttention is faster; for N ≥ 16k hashrope's
+mean+1σ < PagedAttention's mean−1σ.
+
+(iv) **At N=1M, every block size {8,16,32,64}:** 9/9 paired sign wins (p=0.004);
+branch-creation speedup 169× / 97× / 43× / 20×; branching-memory compression
+(5 branches) 613× / 306× / 153× / 68× (all ≫ 10× threshold).
+
+### Observations (full decomposition; every metric reported)
+
+- **Branch-creation (gated):** hashrope is essentially flat in N — 25.9/27.1 µs
+  at N=1k (b16/b8) rising only to 37.1/40.0 µs at N=1M — the O(log w) signature.
+  PagedAttention scales linearly: at block 16, 13.9 µs (1k) → 3.61 ms (1M); at
+  block 8, 17.4 µs → 6.74 ms. Smaller blocks cross earlier (more ⌈N/B⌉ entries to
+  copy): b8 by N=4k, b16 at 16k, b32 and b64 by 64k.
+- **Branching memory (gated):** at N=1M / 5 branches hashrope holds all 5 branches
+  in ~9.2 KB (tracemalloc) while PagedAttention needs 5.63 MB (b8) down to 629 KB
+  (b64) — 613×/306×/153×/68×. Compression grows with N (b16: 3.5× at 1k → 306×
+  at 1M) because the paged block table is Θ(N/B) per branch while hashrope adds
+  only O(log w) shared spine nodes per branch (cf. M1/EXP-004).
+- **Per-token append (boundary; PagedAttention wins, pre-registered):** hashrope
+  O(log w) ~11 µs (1k) → ~17 µs (1M); PagedAttention O(1) amortized ~0.33 µs →
+  ~0.5–1.0 µs, i.e. ~18–35× faster. Reported, not hidden.
+- **Bare fork (descriptive; hashrope wins everywhere, no crossover):** hashrope
+  O(1) root-share ~39 ns FLAT across all N (38.5 ns at 1M); PagedAttention copies
+  the block table — 1.1 µs (1k, b64) up to 6.13 ms (1M, b8). This is exactly why
+  bare fork is NOT the gated metric (Addendum A): hashrope wins at every N because
+  divergence is deferred to the first append.
+
+### Interpretation
+
+Against a faithful, separately-unit-tested PagedAttention block-table COW baseline,
+the single persistent rope wins the branch/snapshot workload on both gated axes
+(branch-creation latency and branching memory) past a modest context size
+(N* = 16k tokens at the reference block), with byte-identical results — the
+unification thesis (one structure for branch/snapshot + incremental edit + prefix
+identity + repetition) pays off rather than costing a generality tax. The two
+honest boundaries are reported in full and framed as the bounded price of that
+generality: PagedAttention's purpose-built block layout wins amortized O(1)
+per-token append, and hashrope's deferred-divergence fork (O(1) bare fork)
+trivially wins bare fork at all N — which is precisely why branch-creation, the
+metric that charges hashrope its full O(log w) spine, was pre-registered as the
+gated referent. Transferable claims are the deterministic structural guards
+(content-independent) and the O(log w) vs O(⌈N/B⌉) scaling; the absolute µs/ms
+constants are pure-Python interpreter-amplified (smaller in Rust, deferred).
+
+### Remaining: Milestone B (supplementary, ecological)
+
+Real gpt-oss-120b Game-of-24 ToT traces (Yao et al. beam b=5, depth 3) recorded to
+data/canonical/tot_traces_gptoss120b_s{seed}.jsonl, then replayed through the same
+harness — ecological validity for the branching shape. Not part of the (met)
+Milestone-A gating criterion; adds external validity. Tracked in PROGRAM.md.

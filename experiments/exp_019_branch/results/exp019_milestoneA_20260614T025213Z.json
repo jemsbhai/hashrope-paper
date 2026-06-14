@@ -1,0 +1,184 @@
+{
+  "experiment": "EXP-019",
+  "milestone": "A",
+  "claim": "B3",
+  "gated_metric": "branch_create_latency (LOGBOOK Addendum A)",
+  "seeds": [
+    42
+  ],
+  "invocations": 1,
+  "n_runs": 1,
+  "n_sweep": [
+    1000,
+    4000
+  ],
+  "block_sizes": [
+    8,
+    16
+  ],
+  "branch_counts": [
+    5
+  ],
+  "ref_block": 16,
+  "env": {
+    "git_sha": "5848110edec3bd33065eac38bcbe0daa24d7e5da",
+    "hashrope_version": "0.2.2",
+    "python": "3.12.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 32,
+    "corpus_sha16": {
+      "42": "fda6a43a3fe34184"
+    },
+    "timestamp_utc": "2026-06-14T02:52:13.145686+00:00"
+  },
+  "run_files": [
+    "exp019_run_s42_i0.json"
+  ],
+  "aggregate_cells": [
+    {
+      "N": 1000,
+      "block_size": 8,
+      "branch_create_hr_mean": 2.8062064336639664e-05,
+      "branch_create_hr_std": 0.0,
+      "branch_create_pa_mean": 1.7061758752680553e-05,
+      "branch_create_pa_std": 0.0,
+      "branch_create_speedup": 0.608000842276012,
+      "branch_create_sign_wins": 0,
+      "n": 1,
+      "hr_wins_band": false,
+      "bare_fork_hr_mean": 3.689250002935296e-08,
+      "bare_fork_pa_mean": 6.950976245195883e-06,
+      "append_hr_mean": 1.2291992163682153e-05,
+      "append_pa_mean": 3.2070312272480805e-07
+    },
+    {
+      "N": 1000,
+      "block_size": 16,
+      "branch_create_hr_mean": 2.553789624238121e-05,
+      "branch_create_hr_std": 0.0,
+      "branch_create_pa_mean": 1.5409819563886924e-05,
+      "branch_create_pa_std": 0.0,
+      "branch_create_speedup": 0.6034099057193945,
+      "branch_create_sign_wins": 0,
+      "n": 1,
+      "hr_wins_band": false,
+      "bare_fork_hr_mean": 3.834349998214747e-08,
+      "bare_fork_pa_mean": 3.5346526208702453e-06,
+      "append_hr_mean": 1.0550390612706906e-05,
+      "append_pa_mean": 3.1777344133843144e-07
+    },
+    {
+      "N": 4000,
+      "block_size": 8,
+      "branch_create_hr_mean": 2.801331080460128e-05,
+      "branch_create_hr_std": 0.0,
+      "branch_create_pa_mean": 3.5311148753742134e-05,
+      "branch_create_pa_std": 0.0,
+      "branch_create_speedup": 1.2605132253036708,
+      "branch_create_sign_wins": 1,
+      "n": 1,
+      "hr_wins_band": true,
+      "bare_fork_hr_mean": 3.930399998353096e-08,
+      "bare_fork_pa_mean": 2.597682767695998e-05,
+      "append_hr_mean": 1.1381054690673409e-05,
+      "append_pa_mean": 3.3535158650011e-07
+    },
+    {
+      "N": 4000,
+      "block_size": 16,
+      "branch_create_hr_mean": 2.878002680820318e-05,
+      "branch_create_hr_std": 0.0,
+      "branch_create_pa_mean": 2.2572675170184023e-05,
+      "branch_create_pa_std": 0.0,
+      "branch_create_speedup": 0.7843173781808336,
+      "branch_create_sign_wins": 0,
+      "n": 1,
+      "hr_wins_band": false,
+      "bare_fork_hr_mean": 3.698999997141072e-08,
+      "bare_fork_pa_mean": 1.3461334203261945e-05,
+      "append_hr_mean": 1.0803710949858214e-05,
+      "append_pa_mean": 3.126953060927917e-07
+    }
+  ],
+  "aggregate_memory": [
+    {
+      "N": 1000,
+      "block_size": 8,
+      "branch_count": 5,
+      "compression_mean": 4.6712273641851105,
+      "compression_std": 0.0,
+      "hr_bytes_mean": 2485,
+      "pa_bytes_mean": 11608
+    },
+    {
+      "N": 1000,
+      "block_size": 16,
+      "branch_count": 5,
+      "compression_mean": 3.463983903420523,
+      "compression_std": 0.0,
+      "hr_bytes_mean": 2485,
+      "pa_bytes_mean": 8608
+    },
+    {
+      "N": 4000,
+      "block_size": 8,
+      "branch_count": 5,
+      "compression_mean": 9.062013088189467,
+      "compression_std": 0.0,
+      "hr_bytes_mean": 3209,
+      "pa_bytes_mean": 29080
+    },
+    {
+      "N": 4000,
+      "block_size": 16,
+      "branch_count": 5,
+      "compression_mean": 4.963540043627298,
+      "compression_std": 0.0,
+      "hr_bytes_mean": 3209,
+      "pa_bytes_mean": 15928
+    }
+  ],
+  "verdict": {
+    "n": 1,
+    "total_mismatches": 0,
+    "crit_i_byte_identity": true,
+    "crit_ii_guards": true,
+    "crit_iii_crossover_refblock": {
+      "ok": false,
+      "crossover_N": null,
+      "ref_block": 16
+    },
+    "crit_iv_at_Nmax": {
+      "ok": false,
+      "N": 4000,
+      "latency": [
+        [
+          8,
+          false,
+          1,
+          1.2605132253036708
+        ],
+        [
+          16,
+          false,
+          0,
+          0.7843173781808336
+        ]
+      ],
+      "memory_bc5": [
+        [
+          8,
+          false,
+          9.062013088189467
+        ],
+        [
+          16,
+          false,
+          4.963540043627298
+        ]
+      ]
+    },
+    "B3_supported": false
+  }
+}
