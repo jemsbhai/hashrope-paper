@@ -1430,3 +1430,250 @@ script, CLAIMS.md, and here.
 - Tests: tests/test_competitive.py (45 tests)
 - Baseline: third_party/sglang_radix_cache/ (vendored byte-identical)
 - Instrumented: tools/make_instrumented_radix.py (generator)
+
+
+---
+
+## EXP-019: Competitive branch/snapshot — hashrope vs PagedAttention block-table COW (claim B3)
+
+**Date:** 2026-06-13 (planned)
+**Researcher:** Muntaser Syed
+**Type:** computational
+**Status:** planned
+
+### Context
+
+Second experiment of the competitive-baseline layer (Leg 2 of the unification
+thesis: branch/snapshot), layered on the closed mechanism experiments
+(EXP-001…006) and the first competitive baseline (EXP-017, Leg 3). Baseline =
+a faithful CPU reimplementation of PagedAttention's block-table copy-on-write
+(Kwon et al., *Efficient Memory Management for LLM Serving with PagedAttention*,
+SOSP 2023, pp. 611–626; arXiv:2309.06180), since no library exposes CPU-level
+block-table COW for standalone benchmarking. The reimplementation is cited and
+its source is public for review (`src/paged_attention_cow.py`).
+
+**Citation precision (corrected from the kickoff prompt's "§4.2"):** the
+ref-counted physical-block + per-sequence block-table structure is **§4.2 (KV
+Cache Manager)**; the **copy-on-write algorithm is specified in §4.4
+(Application to Other Decoding Scenarios — parallel sampling / beam search)**.
+The paper analogizes beam-search block sharing to "the process tree in the OS
+created by compound forks," which is exactly the Tree-of-Thought branching
+pattern this experiment drives.
+
+### Hypothesis
+
+Hashrope's immutable structural sharing (Invariant I9) makes a branch fork cost
+O(log N) (root-to-leaf path copy, O(log w) new Internal nodes), while a faithful
+PagedAttention block-table COW fork costs O(⌈N/B⌉) (copy the per-sequence block
+table + increment ref-counts on each shared physical block). Therefore:
+(a) a fork-latency crossover N* exists beyond which hashrope is faster, and the
+advantage grows without bound; (b) under fine-grained ToT branching, hashrope's
+incremental memory (node-granularity sharing + an O(log N) spine per fork) is
+smaller than PagedAttention's (B-token-granularity block sharing + a full
+⌈N/B⌉-entry block table **per branch**, which is per-sequence by §4.2/§4.4),
+with compression growing in N. Both arms produce byte-identical branched
+contexts. PagedAttention's per-token **append** is O(1) amortized (write in
+place; occasionally one COW block-copy or a new-block allocation) vs hashrope's
+O(log N) — reported as an honest boundary condition, framed as the bounded
+constant-factor price of generality (the unification thesis: one structure
+serves all four legs simultaneously; a per-leg specialist optimizes one and
+cannot answer the others).
+
+### Baseline mechanism (extracted verbatim from §4.2 / §4.4)
+
+- KV cache = a series of fixed-size **logical blocks** (B tokens each), filled
+  left-to-right; the last block's unfilled slots are reserved. A per-sequence
+  **block table** maps each logical block → (physical block number, #filled).
+  Each **physical block** carries a **reference count**.
+- **Fork:** the child's logical blocks map to the *same* physical blocks as the
+  parent; each shared physical block's ref-count is incremented (per-sequence
+  block tables; shared physical blocks).
+- **Append / write into the partial last block:** if the target physical
+  block's ref-count > 1, allocate a new physical block, copy the old block's
+  contents into it, decrement the old block's ref-count, and write into the new
+  block; if ref-count == 1, write in place; if the last block is full, allocate
+  a fresh physical block. COW copies **exactly one block**, triggered **only**
+  when the new token lands in a shared block ("with the exception of the final
+  logical block, which is managed by a copy-on-write mechanism").
+- **Prune** (beam search): a pruned candidate's logical blocks are freed,
+  ref-counts decremented, physical blocks reclaimed at ref-count 0.
+
+### Independent variables
+
+- **Milestone A (controlled context-size sweep — PRIMARY):** base context size
+  N ∈ {1k, 4k, 16k, 64k, 256k, 1M} tokens; arm ∈ {hashrope, paged-cow};
+  PagedAttention block size ∈ {8, 16, 32, 64} tokens (**16 = reference**); ToT
+  shape fixed (beam b=5, depth=3, fan-out c=5 candidates/node before prune,
+  append step s=32 tokens); corpus seed ∈ {42, 43, 44}.
+- **Milestone B (real gpt-oss-120b ToT traces — SUPPORTING/ecological):**
+  Game-of-24 puzzle ∈ the canonical hard test set (indices 901–1000 per Yao et
+  al. 2023; subset reported if call budget requires); arm; block size; real ToT
+  traces generated once by gpt-oss-120b (Ollama cloud), recorded as fixed
+  artifacts and replayed (no LLM call in the timed path).
+
+### Dependent variables / metrics
+
+- **Correctness [HARD gate, boolean]:** every branched context materializes
+  (`rope_to_bytes` / block-table walk) to the expected token sequence ==
+  independent token-level oracle; 0 mismatches, both arms, all cells.
+- **Fork latency (ms):** time to fork one branch off a base of size N (base
+  built untimed); warm, reps=5 → median, mean ± std (n=9). → crossover N*.
+- **Append latency (ms/token):** time to append one token to a branch;
+  **descriptive** (PagedAttention expected O(1) amortized; hashrope O(log N)).
+- **Branching memory:** hold B live branches off a base of size N (each branch
+  = 1 fork + s-token append); tracemalloc delta over the built base + structural
+  guards — hashrope unique-node count (deterministic, EXP-004
+  `count_unique_nodes`); PagedAttention unique live physical blocks + total
+  block-table entries (per-sequence). **Compression** = PagedAttention delta /
+  hashrope delta. Sweep N at B=5 (the ToT beam) and B ∈ {5, 10, 25, 50} at fixed
+  N=1M.
+- **Descriptive (non-gating):** per-fork structural detail; build memory/time
+  per arm.
+
+### Control conditions
+
+- Both arms pure Python on the same interpreter (fair; cf. EXP-017). Token
+  granularity throughout (the KV-reuse unit). hashrope stores tokens as 4-byte
+  LE (EXP-017 convention); PagedAttention block = block_size tokens.
+- Same base content (real corpus, same files as EXP-001/002/004/005,
+  SHA-256[:16] 42=fda6a43a, 43=85ca5870, 44=dfd645be) and the same appended
+  step bytes for both arms at each cell.
+- Setup (base build for both arms) **untimed**; only the measured op
+  (fork / append) is timed.
+- Oracle = plain Python list operations on the expected token sequence.
+- Fresh subprocess per (seed, invocation); warmup discarded; GC handling
+  identical across arms (EXP-004/017 template).
+- Milestone B: traces generated once (model id, temperature, sampling seed,
+  prompts all logged in the artifact); the benchmark replays the recorded tree
+  — both arms replay identical recorded forks/appends.
+
+### Workload construction
+
+- **Milestone A controlled ToT lattice:** base = corpus_tokens[:N]; BFS with
+  beam b=5, depth=3; at each node generate c=5 children, each child =
+  fork(parent) + append s=32 tokens (disjoint corpus slice); evaluate (no
+  structural cost) and keep b survivors. Deterministic given (seed, N). The
+  fork-latency and append-latency cells isolate a single op; the
+  branching-memory cells hold B live branches.
+- **Milestone B real traces:** a Yao-et-al.-style ToT controller
+  (`tools/gen_tot_traces.py`) runs Game-of-24 with gpt-oss-120b via Ollama
+  (propose prompt + value prompt, beam b=5, depth 3), recording the full
+  branching tree per puzzle (each node: parent id, appended step text,
+  kept/pruned flag) to `data/canonical/tot_traces_gptoss120b_s<seed>.jsonl`
+  (versioned, never overwritten). The benchmark replays each recorded tree on
+  both arms.
+
+### Protocol (TDD, red-first)
+
+1. `src/paged_attention_cow.py`: `PhysicalBlockPool` (allocate / free /
+   ref-counts), `PagedSequence` (block_table, length), `fork`, `append_token`,
+   `materialize` — faithful §4.2/§4.4. Stubs first.
+2. `src/branch_bench.py`: hashrope arm (`fork_rope` = hold root ref +
+   `rope_concat` append; reuse `build_fat_leaf_rope` / `make_hash` /
+   `count_unique_nodes`), oracle, harness helpers.
+3. `tests/test_paged_attention_cow.py` + `tests/test_branch.py` (red-first):
+   COW triggers iff ref-count > 1 on a partial-block write (copies exactly one
+   block); ref-count accounting on fork/free; materialize byte-identity vs
+   oracle; fork touches ⌈N/B⌉ block-table entries; hashrope per-fork nodes =
+   O(log w); both arms agree with the oracle on constructed branch sets. RED at
+   stubs → GREEN after implementation.
+4. `tools/gen_tot_traces.py` (Milestone B): the Ollama ToT controller; user runs
+   it; produces the recorded-trace artifacts.
+5. `scripts/exp019_bench.py`: orchestrator + worker (EXP-004/017 template).
+   Worker: build base (untimed) → correctness (HARD) → fork-latency /
+   append-latency / branching-memory cells → JSON with env + corpus SHA + git
+   SHA + (Milestone B) trace-artifact SHA. Orchestrator: 3 seeds × 3
+   invocations, aggregate, evaluate criterion verbatim, write latest +
+   timestamped JSON.
+6. `scripts/exp019_figure.py`: (a) fork latency vs N, both arms × block sizes,
+   crossover marked [HEADLINE]; (b) branching-memory compression vs N
+   [HEADLINE]; (c) append latency vs N (boundary condition); (d) Milestone B
+   real-trace per-arm latencies. png + pdf.
+7. Record results, evaluate criterion verbatim, update CLAIMS.md (B3) +
+   PROGRAM.md, commit.
+
+### Environment
+
+- **Hardware:** laptop, Intel i9-14900HX (24c/32t hybrid P+E), 64 GB RAM, RTX
+  4090 Laptop (idle for the CPU benchmark; the GPU is not used — gpt-oss-120b
+  runs via Ollama cloud for trace generation only).
+- **Software:** Windows 11 (10.0.26200), Python 3.12.2, hashrope 0.2.2; Ollama
+  (gpt-oss-120b cloud) for Milestone-B trace generation; numpy version recorded
+  at runtime.
+- **Baseline:** faithful reimplementation in-repo (`src/paged_attention_cow.py`);
+  no external dependency.
+- **Git commit:** [fill: clean SHA, bench script committed BEFORE the
+  confirmatory run].
+- **Seeds:** corpus {42, 43, 44}.
+
+### Reporting & framing (pre-registered, decided before any data)
+
+This is a contribution paper introducing a novel structure; the **headline is
+hashrope's wins**, and the experiment is designed so the *primary measured
+result* is the regime the structure is built to excel in. **Milestone A is
+primary** and supplies the headline numbers: the fork-latency crossover and the
+large-context **fork-latency** and **branching-memory** wins across all block
+sizes — the regime of agentic / long-context ToT branching, where LLM serving
+is heading. **Milestone B (real Game-of-24 traces) is supporting ecological
+validity**, reported in full. Two honest boundary conditions are reported (not
+as the thesis): (a) PagedAttention's per-token **append** is O(1) amortized vs
+hashrope O(log N) — the bounded constant-factor price of generality; (b) at
+**short contexts** (literal Game-of-24, ~hundreds of tokens) PagedAttention's
+tiny block table makes its fork competitive or faster. Both are contextualized
+by the unification thesis: hashrope's single persistent structure simultaneously
+serves branch/snapshot (this EXP), prefix-identity (B1/T3), repetition (T4), and
+incremental edit (L1/L2/B2); a per-leg specialist optimizes one leg and cannot
+answer the others. **No cell is omitted**; emphasis is editorial, and the
+criterion below is **not** weakened to manufacture a win (EXP-017 discipline) —
+reporting every regime honestly is what makes the headline credible to a
+best-paper committee.
+
+### Promotion criterion (verbatim, written before any data)
+
+B3 → **SUPPORTED** iff, across ≥3 corpus seeds × ≥3 independent invocations
+(n ≥ 9), on **Milestone A**:
+
+(i)   **[HARD] Correctness:** every arm's branched context == oracle token
+      sequence for every cell (controlled N, all block sizes) — 0 mismatches.
+      Failure → experiment FAILS outright.
+(ii)  **Guards:** hashrope per-fork new nodes ≤ ⌈log₂ w⌉ + 3 (w = base leaf
+      count); PagedAttention fork touches ⌈N_tok/B⌉ block-table entries on
+      every fork. Failure → bug hunt, no retrofit.
+(iii) **Fork-latency crossover exists and is stable:** ∃ N* in the swept grid
+      such that for every tested N ≥ N*, hashrope mean + 1σ < PagedAttention
+      mean − 1σ (at reference block size 16); and for every tested N < N*,
+      PagedAttention mean ≤ hashrope mean. Per-seed N* within one grid step of
+      the pooled N*.
+(iv)  **Large-context win at N = 1M tokens, at EVERY block size {8,16,32,64}:**
+      hashrope beats PagedAttention on fork latency with paired sign test 9/9
+      (p = 0.004) and mean fork speedup ≥ 2×, AND incremental branching-memory
+      compression (PagedAttention/hashrope, at B=5) ≥ 10×.
+(v)   All headline numbers reported as mean ± std (n=9). Append-latency cells
+      and all Milestone-B real-trace cells reported **descriptively in full**
+      (they inform framing, not the verdict — cf. EXP-017 real pairs).
+
+Failure of (iii)/(iv) → B3 stays unsupported, reported honestly; the design
+targets the win regime but the criterion is evaluated verbatim and not softened.
+A pre-registered estimate that proves off (e.g., the crossover grid) may be
+revised ONCE with the revision documented openly (EXP-017 policy: extend the
+grid, never lower the bar).
+
+**Honesty note:** fork/append absolute latencies are pure-Python
+(interpreter-amplified); the transferable claims are the structural guards —
+hashrope O(log N) fork nodes vs PagedAttention O(N/B) block-table touch
+(deterministic), and the O(log N) vs O(N/B) branching-memory scaling — which
+hold in any implementation, with smaller constants in Rust.
+
+### Results
+
+[filled post-run]
+
+### Artifacts
+
+- Baseline reimplementation: src/paged_attention_cow.py
+- hashrope arm + harness: src/branch_bench.py
+- Tests: tests/test_paged_attention_cow.py, tests/test_branch.py
+- Trace generator (Milestone B): tools/gen_tot_traces.py ; traces
+  data/canonical/tot_traces_gptoss120b_s*.jsonl
+- Bench: scripts/exp019_bench.py ; results experiments/exp_019_branch/results/
+- Figure: scripts/exp019_figure.py ; figures/exp019_*.{png,pdf}
