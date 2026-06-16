@@ -2096,3 +2096,119 @@ block, strong (17x-67x) on memory across deployed block sizes, byte-perfect, cro
 confirmed at N*=16k. **B3 SUPPORTED (Milestone A) + ecologically corroborated (Milestone B).**
 
 EXP-019 Milestone B closed. EXP-019 closed.
+
+---
+
+## EXP-020 -- Competitive Leg 1: incremental edit, hashrope (Rust) vs Ropey 1.6.1 (claim B2) -- kickoff plan
+
+**Date:** 2026-06-16. **Status:** kickoff plan; verbatim promotion criterion written
+BEFORE any code (signed off before coding). Rust-to-Rust workstream (separate from the
+Python experiments). Couples conceptually to EXP-003 (incremental edit) but runs
+standalone -- EXP-003 is not yet started and B2 cannot share its artifact; the workload
+spec below is written so EXP-003 can mirror it later.
+
+### Hypothesis (H)
+
+On incremental-edit workloads at LLM-context scale, hashrope's split/concat edits are in
+the same O(log N) class as Ropey's, at a bounded constant-factor cost, WHILE ADDITIONALLY
+maintaining a verifiable polynomial fingerprint of the whole buffer through every edit --
+a capability Ropey lacks. Consequently, on workloads that interleave edits with
+content-identity queries (verified KV-cache reuse / dedup), hashrope is net-superior
+because the fingerprint is O(1)-maintained whereas Ropey must recompute it in O(N) per
+query.
+
+### Apparatus / arms (Rust-to-Rust, criterion, harness=false)
+
+- hashrope: Arena::new() -- NON-LAZY, so the fingerprint is maintained eagerly along the
+  O(log N) spine on every edit (this is the whole point; new_lazy() would defer it and is
+  NOT used). insert = 1 split + 2 concats; delete = 2 splits + 1 concat.
+- Ropey 1.6.1: Rope::insert(char_idx, &str) / Rope::remove(range). No maintained hash.
+- For identity queries, Ropey is given hashrope's OWN PolynomialHash applied to its
+  materialized bytes -- so regime B compares maintained-incrementally vs
+  recomputed-from-scratch, NOT two different hash algorithms.
+
+### Workload (ASCII content so char_idx == byte_idx; removes the byte/char confound)
+
+- Buffer sizes (IV), decimal / non-power-of-two: N in {1k, 3k, 10k, 30k, 100k, 300k, 1M}
+  chars.
+- Churn op: delete a random span + insert a same-length random ASCII span at a random
+  incoherent position -> keeps |buffer| ~ N stable across the op sequence. ONE seeded op
+  sequence, IDENTICAL for both arms.
+- Regime A (edit-only): K churn ops timed as a batch; DV = per-edit latency = batch / K.
+- Regime B (edit + identity): K cycles of [churn op -> whole-buffer fingerprint query];
+  DV = per-cycle latency. hashrope query = read root hash (O(1)); Ropey query = recompute
+  polynomial hash over all N bytes (O(N)). Query:edit ratio r in {1, 0.1, 0.01} swept
+  (r=1 = verified-cache-heavy regime = headline).
+- Default batch sizes (tunable): K=200 (regime A), K=50 (regime B); criterion adapts
+  sample count.
+
+### Methodology / fairness controls (locked)
+
+1. Arena-drop EXCLUDED from timing: iter_batched(setup, ..., PerIteration), return the
+   arena from the timed closure so its destructor runs outside the window (the existing
+   bench's hard-won pattern -- a ~1.3 MB arena drops in ~700 us and would otherwise
+   dominate). Ropey buffer build likewise in setup.
+2. Power-cache WARMED before timing (PolynomialHash power cache grows to the max string
+   length on first use; warm it so regime timings are steady-state, not first-touch).
+3. Non-lazy arena (fingerprint cost INCLUDED in hashrope edit time).
+4. Identical seeded op sequence + identical RNG across arms; black_box on inputs/outputs.
+5. validate_rope invariant check in the correctness test (live tree stays BB[2/7]-balanced
+   under churn).
+
+### Error model
+
+Confirmatory = >=3 content seeds x >=3 separate bench-binary invocations (n>=9); report
+mean +/- std of criterion point estimates across runs (within-run CI retired as the bar,
+per EXP-001); paired sign test for regime B.
+
+### Promotion criterion (verbatim, written before any code; revisable only by extending
+the sweep, never lowering a bar -- EXP-017 policy)
+
+B2 -> SUPPORTED iff, across >=3 seeds x >=3 invocations (n>=9), ASCII content, the swept
+N and r:
+
+(i)   [HARD] Correctness. At every edit step, both arms' buffers are byte-identical
+      (rope_to_bytes(hashrope) == ropey bytes), AND hashrope's maintained whole-buffer
+      fingerprint equals an independent from-scratch polynomial hash of the materialized
+      bytes -- 0 mismatches on both, every step, every seed. Any mismatch -> B2 FAILS
+      outright (bug hunt, no retrofit).
+(ii)  [HARD] Sub-linear edit class. hashrope regime-A per-edit log-log slope vs N is
+      <= 0.3 over N >= 10k (O(log N) confirmed; Ropey's slope reported alongside).
+(iii) [HARD] Differentiator win (headline). On regime B at r=1, at N=1M: hashrope
+      per-cycle latency < Ropey per-cycle latency with paired sign 9/9 and mean speedup
+      >= 2x, AND the hashrope advantage is monotone-growing in N above a crossover N*_id.
+(iv)  Edit-only constant factor (pre-registered framing rule, NOT pass/fail). Report
+      C = hashrope / Ropey per-edit latency at N=1M (mean +/- std). If C <= 30x, the
+      "competitive on raw edit" clause stands as written. If C > 30x, the headline
+      narrows to (iii) and edit-only is reported as the honest constant-factor cost of
+      maintained fingerprinting -- decided here, in advance, so it is not a retrofit
+      either way.
+(v)   Honest negatives reported in full. Ropey's raw-edit constant-factor win; the r and
+      N*_id where hashrope's edit+identity advantage crosses; and hashrope's
+      PERSISTENT-ARENA MEMORY GROWTH under linear churn (retained dead nodes,
+      ~O(edits x log N)) vs Ropey's in-place edit -- the flip side of the EXP-004
+      branch/snapshot win (same persistence, opposite sign).
+(vi)  All numbers mean +/- std (n>=9); paired sign test for (iii).
+
+### Provenance
+
+Ropey pinned at 1.6.1 in [dev-dependencies] ONLY (the shipped crate keeps zero runtime
+deps); exact version + crates.io checksum recorded from Cargo.lock at kickoff.
+
+### Artifacts
+
+- Correctness test: packages/rust/tests/test_b2_correctness.rs (red-first).
+- Bench: packages/rust/benches/bench_b2_edit.rs (new file; separate [[bench]] entry).
+- Results: paper repo experiments/exp_020_edit/results/.
+- Figures: figures/exp020_*.{png,pdf}.
+
+### TDD note
+
+B2 measures EXISTING, already-tested functionality (split/concat/substr_hash/rope_hash);
+there is no new hashrope feature to implement. The red-first gate is therefore the
+correctness harness: test_b2_correctness.rs references the ropey dev-dep and asserts the
+two arms agree (byte-identity + maintained-hash-vs-recompute) through a churn sequence.
+Before the ropey dev-dep is added, cargo test fails to COMPILE (confirmed-red on
+Muntaser's machine); adding ropey 1.6.1 turns it GREEN (arms agree). A red on the
+assertions (not the compile) would be a real hash-maintenance bug under churn -- a
+finding, investigated, not retrofitted.
