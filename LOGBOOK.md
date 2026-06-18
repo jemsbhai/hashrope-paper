@@ -2373,3 +2373,98 @@ prefix-verified KV cache), not at the markdown-editing end.
 is where the four mechanisms co-occur on one context"), scoped to the regime where the asymptotics
 bite and gated by the four SUPPORTED legs -- never stated as a benchmarked agent result. No CLAIMS.md
 row; no code; no PROGRAM.md schedule change.
+
+---
+
+## EXP-015 -- Real-serving-stack validation of hashrope's content-identity layer + prefix-caching energy attribution (claim S3) -- kickoff plan
+
+**Date:** 2026-06-18. **Status:** kickoff plan; verbatim promotion criterion + all framings pre-registered BEFORE any code, signed off before coding. **Apparatus:** 1 node, 4x NVIDIA A100-40GB, SLURM. The paper's energy headline is EXP-016 (host/DRAM); EXP-015 establishes the GPU-side facts that contextualize it and replaces the prior draft's faked S3.
+
+### What EXP-015 establishes (win-first)
+
+On a production-grade 7B serving stack (SGLang, Qwen2.5-7B-Instruct, A100), this experiment shows:
+
+1. **hashrope's content-identity layer is byte-exact on real GPU workloads** -- the same prefix-reuse decision as the engine's own matcher, 0 mismatches, validated against a real stack, not a CPU microbench.
+2. **It is energy-transparent: hashrope delivers verifiable, portable content-identity at ZERO GPU-energy cost.** The unification layer -- one persistent structure serving edit/branch/identity/repeat (EXP-002/004/005/006/017/019/020), with a whole-context fingerprint that travels across engine instances, survives cache eviction, and powers cross-request dedup the engine's per-instance radix tree cannot -- is delivered on the GPU stack with the GPU bill unchanged. Generality for free.
+3. **In the long-context regime (R2 -- the regime where verified reuse matters), hashrope identifies reusable prefixes as fast as or faster than the engine's matcher,** corroborating EXP-017's crossover on a real stack, while additionally maintaining the fingerprint the engine lacks.
+4. **The first rigorous, properly-attributed measurement of prefix-caching energy on a real 7-8B stack** -- the honest replacement for the prior draft's faked 62.7% (which never invoked hashrope; CLAIMS.md S3). The caching energy effect is real; we report it, correctly attributed to the framework.
+
+The energy *reduction* win -- fewer joules from fewer memory ops -- is EXP-016 (host DRAM, O(log N) edit vs O(N) copy, TOML-grounded, analytical + empirical). EXP-015's job is the GPU-side validation + attribution above.
+
+### Scope: what is and is not a GPU-energy question
+
+hashrope is a host-side logical-context layer; the engine owns the KV cache. hashrope's only GPU-level arm is as the prefix IDENTIFIER feeding the engine's reuse decision (Layer B). Branching (B3) and repetition (T4) are NOT GPU-energy experiments: the engine's COW fixes branching VRAM identically with or without hashrope upstream, and repeated content sits at different positions so its KV differs under RoPE regardless (logical-identity is not KV-identity). Their wins are host-side and already SUPPORTED (EXP-019, EXP-006). A GPU KV arm for hashrope would need a custom attention/KV CUDA backend (large, sandbox-unvalidatable, positionally capped) -- deferred, recorded so its absence is a documented choice, not an oversight.
+
+### Hypotheses (H)
+
+- **H1 (framework caching effect, attributed):** enabling the engine's prefix cache reduces GPU J/token and TTFT vs off, measurable at n>=9; attributed to the framework.
+- **H2 (energy-transparency, the win):** GPU J/token, TTFT, throughput depend only on the cache axis {OFF, ON}, not on which identifier {radix, hashrope, flat} feeds the decision -- hashrope's identity layer is GPU-energy/latency-neutral. Structural, because exactness makes the dispatched GPU workload byte-identical across identifier arms.
+- **H3 (identification cost -- win in R2, honest negative in R1):** client-side identification reproduces EXP-017 on the live stack -- in R2 (long shared prefix) hashrope is competitive-to-cheaper than radix with overhead negligible vs the large prefill (the win-regime); in R1 (~2k tokens) the engine's incremental matcher is cheaper (honest negative, reported in full, not the lede).
+
+### Two-layer isolation design
+
+- **Layer A -- engine cache axis. IV: framework prefix cache {OFF, ON}.** SGLang serves the workload caching-off then caching-on. Delta(ON-OFF) in GPU J/token, TTFT, throughput = the real reuse benefit, the framework's.
+- **Layer B -- identifier axis. IV: client-side identifier {vendored-radix, hashrope-LCP, numpy-flat}** over the same stream, timed host-side, deciding the longest shared prefix vs the cached pool (hashrope also maintains its structure + fingerprint). DV: per-request identification latency + maintained-structure cost.
+
+The separation is clean by construction: the correctness gate forces all identifiers to the SAME reuse decision, so the request schedule dispatched to the GPU is identical across identifier arms -- GPU energy cannot depend on the identifier (that is exactly H2's transparency win, stated transparently). The GPU run's substance is H1 (attribution + fake correction), confirming H2 with no confound, and the real magnitudes for H3.
+
+### Regimes
+
+- **R1 -- realistic streams:** ShareGPT + LMSYS multi-turn replay (canonical JSONL), ~2k-token prefixes. Single A100.
+- **R2 -- controlled long-shared-prefix synthetic:** one long base context (length L) populated once, then short divergent queries each sharing the L-token prefix; L straddles L*~571k (e.g. {128k, 256k, 400k, 512k, 1M}, collaborator-trimmed to capacity). Measures the live-stack identification crossover L*' (may differ from EXP-017's CPU L* -- itself a finding).
+
+### IVs / DVs
+
+IVs: cache {OFF, ON} x identifier {radix, hashrope, flat} x regime {R1, R2} x (R2) prefix length L. 3 seeds x 3 invocations (n>=9). DVs: GPU J/token and J/request via NVML (R1 per-card by index; R2 summed over the working TP group, per-GPU recorded); TTFT (ms); throughput (tok/s, req/s) steady-state; per-request identification latency + maintained-structure build cost; optional host CPU energy via node RAPL if exposed (recorded, not gated). HARD correctness DV: the reuse prefix selected by all three identifiers, compared for byte/token identity.
+
+### Energy measurement rigor (baked in)
+
+`nvmlDeviceGetTotalEnergyConsumption` (mJ counter) read at window start/end, difference = exact Joules; high-frequency `nvmlDeviceGetPowerUsage` trapezoidal integration is the fallback only if the counter is absent (smoke test reports the live path, per GPU). Warm engine + GPU, discard ramp; report normalized per-token/per-request energy, never total over differing wall-times; steady state, not cold peak; lock clocks (`nvidia-smi -lgc`/`-lmc`) if privileged else record clock state + `power.limit`; record driver + CUDA + SGLang + torch + model revision + GPU SKU + corpus hashes in the results JSON.
+
+### Apparatus / arms
+
+Engine: SGLang (current release), Qwen2.5-7B-Instruct (Apache-2.0, ungated, fp16 ~15 GB). Its RadixAttention is the Layer-A {OFF/ON} mechanism. Identifier arms (Layer B, client-side): vendored byte-identical SGLang RadixCache v0.1.17 from EXP-017 (apples-to-apples), hashrope LCP via `hashrope==0.2.2` (token-encoded 4B LE), numpy flat scan (C-speed floor). NVML via `nvidia-ml-py`.
+
+### GPU allocation + capacity
+
+R1 (~2k tokens): one A100/run, NVML by index; the other 3 GPUs run independent seed/invocation replicates in parallel (each pinned to its own GPU + own counter, never summed across other-work GPUs) to cut wall-clock. R2: a 7B KV is ~50-56 KB/token, so one 40 GB card (weights ~15 GB) holds ~400k tokens -- L below that single-card, L beyond it tensor-parallel across all 4 GPUs (energy summed over the 4-GPU TP working set, per-GPU recorded). Collaborator verifies single-card max context + TP workability at smoke.
+
+### Fairness / confound controls (locked)
+
+1. Identical request schedule across identifier arms (guaranteed by the correctness gate) -> byte-identical GPU workload per cell. 2. Identification timed host-side, strictly OUTSIDE the GPU energy window (no overlap). 3. Engine warmed; steady-state windows; ramp discarded. 4. Interleaved/paired arm ordering within one node session (same thermal envelope); paired sign test on deltas. 5. Fixed seeds, batch composition, request order per cell.
+
+### Error model
+
+Confirmatory = 3 seeds x 3 invocations (n>=9), mean +/- std across runs (within-run CI retired as the bar, per EXP-001); paired sign test on per-run deltas; effect size. GPU energy is a direct hardware measurement (no interpreter amplification); client-side identifier latencies inherit EXP-017's Python-amplification caveat and are reported as such.
+
+### Promotion criterion (verbatim; revisable only by EXTENDING the sweep, never lowering a bar -- EXP-017/020 policy)
+
+S3 -> SUPPORTED (real-stack validation + energy-transparency + caching attribution) iff, across 3 seeds x 3 invocations (n>=9), both regimes, the swept L:
+
+- **(i) [HARD -- the correctness win] Exactness on real workloads.** Reuse prefix selected by radix, hashrope, flat is byte/token-identical, 0 mismatches every cell/seed (non-vacuous via a corrupted-cached-entry negative control). Any mismatch -> verdict BLOCKED, bug hunt, no retrofit.
+- **(ii) [HARD -- the energy-transparency win] GPU-energy neutrality of the identity layer.** Cache-ON, |J/token(hashrope) - J/token(radix)| <= delta_E AND TTFT/throughput within preset margins, delta_E = 2% of cache-ON J/token (confound-detection threshold fixed pre-data) and within the radix-arm run-to-run 95% band. Within margin -> "hashrope delivers verified content-identity at zero GPU-energy/latency overhead" (the headline transparency result). Out of margin -> a confound (identification CPU leaking into the GPU window, or non-identical schedule); investigate and fix before any verdict -- out-of-margin is a methodology failure, not a finding.
+- **(iii) [HARD -- the attribution result] Framework caching energy, measured + attributed.** Delta(ON-OFF) in J/token and TTFT reported n>=9 mean+/-std + paired test, labeled the engine's effect, explicitly not hashrope's. (If no reduction appears, that null re-characterizes the framework, reported in full; does not block S3.)
+- **(iv) [the R2 win + R1 honest negative] Identification-cost regimes.** Report identification latency for all arms across R1 and R2's L. WIN clause (R2): beyond the live-stack crossover L*', hashrope <= radix on identification latency AND hashrope's overhead is a negligible fraction of prefill TTFT -- report L*' and the fraction. HONEST-NEGATIVE clause (R1): at ~2k tokens radix < hashrope -- reported in full, not the lede. Pre-registered framing: headline the R2 win + the zero-GPU-cost transparency; no R1 identification-win claim.
+- **(v) Honest negatives in full:** R1 identification cost; any cache-ON TTFT/throughput regression from the pre-step; that H2 neutrality is by-construction; the conditional-on-use scope (an upstream identifier is redundant in a single engine, valuable in multi-instance routing / cross-request dedup / opaque-blob contexts).
+- **(vi)** all numbers mean+/-std (n>=9); paired sign tests on deltas; clocks + full env recorded.
+
+### Pre-registered contingent win (F6, low prior, written so it is not a retrofit)
+
+IF some regime shows a reproducible end-to-end hashrope-arm advantage -- paired 9/9, p<0.05, effect >=10% on TTFT OR throughput OR J/token, with a mechanistic non-confound explanation (passes (ii)) -- THEN promote that regime to a SUPPORTED GPU systems WIN and headline it win-first, scope characterized. Absent that, S3 stands as (i)-(vi).
+
+### Pre-registered hierarchy (settled, recorded before data)
+
+Energy reduction headline = EXP-016 (host). Performance headlines = the four competitive legs (B1/B2/B3, all SUPPORTED). EXP-015 = GPU-side validation (correctness + energy-transparency) + the honest caching-energy attribution that corrects the prior fake. Fixed here; not contingent on the result.
+
+### Provenance
+
+SGLang serving-engine version (recorded from the node) separate from vendored radix-identifier v0.1.17 (checksum re-verified, as EXP-017); Qwen2.5-7B-Instruct HF revision (commit pinned); GPU driver + CUDA + torch + pynvml; ShareGPT/LMSYS corpus SHA-256[:16]; R2 synthetic-generator seed + params; `hashrope==0.2.2`. All in the results-JSON env block (prior shape: env metadata + per-cell records keyed by config + `completed_cells` for resumability).
+
+### Artifacts
+
+Setup script (on-node venv + pip: torch, sglang, nvidia-ml-py, hashrope==0.2.2, datasets; default on-node download, `--offline` flag + configurable `HF_HOME`/model path). Serving harness + NVML probe + three identifier arms. R1 and R2 drivers with `--smoke`/`--dry-run` (tiny model / few requests, 1 GPU). SLURM `sbatch` scripts (1-GPU R1; TP-4 R2). Analysis + figure scripts (sandbox-validated against synthetic + returned results JSON). Results: `experiments/exp_015_energy/results/`. Figures: `figures/exp015_*.{png,pdf}`.
+
+### Collaborator workflow + red/green gate
+
+Author (Claude) -> commit/push (Muntaser) -> `git pull` on node (collaborator) -> `sbatch` smoke first (engine load, NVML path, one R1 + one R2 cell) -> on green, `sbatch` full grid -> return results JSON + logs by email/USB -> analyze + update the four tracking files here. Sandbox has NO GPU, so the collaborator's smoke run is the real red/green gate; I validate only non-GPU parts (arg parsing, corpus loading, hashrope/flat identification on CPU, results-JSON schema, analysis/figure scripts).
+
