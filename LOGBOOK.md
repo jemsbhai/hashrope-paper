@@ -2315,3 +2315,61 @@ e6_memory / e7_tree_height tests pass under 0.3.1. Re-run those two experiments'
 B2 -> SUPPORTED. Results experiments/exp_020_edit/results/exp020_analysis_latest.json. This closes
 Competitive Leg 1 -- the fourth and final leg (B1 EXP-017 / B2 EXP-020 / B3 EXP-019 x2). EXP-020
 closed.
+
+---
+
+## 2026-06-18 -- Framing note: the long-lived context-editing agent as the canonical motivating application (MOTIVATION, not a new claim)
+
+**Status:** motivation/framing for the paper intro, grounded in the four SUPPORTED unification
+legs. NOT an empirical claim about real agents; CLAIMS.md is unchanged. Recorded here so the
+paper draws on it deliberately and within scope.
+
+**Origin.** Arose from a meta-discussion after EXP-020 closed: would hashrope have accelerated
+this session's own heavy file-editing (copy / diff / verify across two machines)? Honest answer
+= NO at this session's scale -- ~10-22 KB markdown files; whole-file transport + SHA-256
+integrity (which a polynomial fingerprint cannot improve, and which C2 explicitly excludes from
+integrity use); single-row edits verified by an instant `diff`, where an O(log N) substr-hash
+comparison is a non-event at 22 KB. But the *shape* of the work -- one long-lived agent mutating
+a context across many turns while something downstream asks content-identity questions between
+edits -- is exactly the workload the unification thesis describes.
+
+**The framing.** A coding/research agent over a long session is a single persistent context
+subjected, interleaved, to all four unified mechanisms on the SAME buffer: incremental edits
+(B2/EXP-020; planned EXP-003), content-identity / prefix-reuse queries for KV-cache reuse and
+dedup (T3/EXP-005 LCP O(log^2 N); B2 regime-B whole-buffer fingerprint O(1)), branch/snapshot
+for speculative or alternative edits (M1/EXP-004; B3/EXP-019), and repeated boilerplate --
+system prompts, few-shot exemplars, repeated file headers (T4/EXP-006). One persistent structure
+serves all four at O(log) per op, and the agent is the natural locus where they co-occur. This
+is a motivation paragraph the four SUPPORTED legs already earn.
+
+**Scope conditions (where the win actually bites -- carried verbatim from B2).** The advantage is
+NOT universal; it is governed by exactly the two axes B2 measured:
+  1. Context size N -- below the per-mechanism crossover the specialist baselines win (B2 N*_id;
+     EXP-017 L*~571k; EXP-019 N*=16k). Small contexts see no benefit.
+  2. Content-identity query rate r between edits -- B2's r-sweep showed the edit+identity
+     crossover moves right as queries thin (r=1 below 1k, r=0.1 at 10k, r=0.01 at 300k). An agent
+     that edits but rarely re-queries identity gets little; the win scales with how often the
+     downstream stack asks "is this region identical to something I already processed?".
+The honest in-session counterexample: this session sat far below both thresholds (tiny files,
+r~0), so hashrope would not have helped -- which is the point, not a contradiction. The thesis
+claims an asymptotic + regime win; the agent application is compelling precisely at the
+large-context, identity-query-rich end (e.g. a multi-MB codebase-as-buffer behind a
+prefix-verified KV cache), not at the markdown-editing end.
+
+**Epistemic status -- what is and is NOT supported.**
+  - SUPPORTED (the mechanism legs, this paper): the four O(log) operations and their head-to-head
+    wins above their crossovers, plus byte-exact correctness. Real and measured (n>=9 each).
+  - NOT established: that *real* LLM-agent sessions actually operate above the crossovers, with an
+    edit/query/branch/repeat mix and context sizes in the winning regime. No end-to-end agent
+    measurement exists. B2 regime-B is a synthetic churn+query microbenchmark; EXP-019 Milestone B's
+    real gpt-oss-120b traces are branch/snapshot only, not interleaved edit+identity. So "agents live
+    in the winning regime" is a hypothesis used as motivation, not a claim.
+  - To upgrade it from motivation to a CLAIM: it needs its own experiment -- a recorded real agent
+    session (e.g. an editing/coding agent over a large repo) replayed to measure the actual
+    operation mix, context sizes, and identity-query rate, then the realized hashrope-vs-specialist
+    cost on that trace. Candidate future EXP; NOT scheduled and NOT asserted here.
+
+**Action.** Use the strong version as an intro/motivation paragraph ("the long-lived editing agent
+is where the four mechanisms co-occur on one context"), scoped to the regime where the asymptotics
+bite and gated by the four SUPPORTED legs -- never stated as a benchmarked agent result. No CLAIMS.md
+row; no code; no PROGRAM.md schedule change.
