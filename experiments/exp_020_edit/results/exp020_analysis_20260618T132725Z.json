@@ -1,0 +1,1038 @@
+{
+  "meta": {
+    "tier1_meta": {
+      "experiment": "EXP-020",
+      "claim": "B2",
+      "created_utc": "2026-06-17T21:30:01.626947+00:00",
+      "host": "muntaserPC2024",
+      "os": "Windows-11-10.0.26200-SP0",
+      "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "python": "3.12.2",
+      "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+      "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+      "scratch_dir": "E:\\data\\code\\claudecode\\hashrope_b2_scratch",
+      "bench_sha256": "0f8639e90647c8054cb7c7e76727cc1c612e14c32ee79477c64c61b06b9cc26b",
+      "ropey": {
+        "version": "1.6.1",
+        "checksum": "93411e420bcd1a75ddd1dc3caf18c23155eda2c090631a85af21ba19e97093b5"
+      },
+      "K_A": 200,
+      "K_B": 50,
+      "tier": "1",
+      "sizes": [
+        1000,
+        3000,
+        10000,
+        30000,
+        100000,
+        300000,
+        1000000
+      ],
+      "seeds": [
+        1,
+        2,
+        3
+      ],
+      "invocations": 3,
+      "last_write_utc": "2026-06-17T22:39:24.637297+00:00"
+    },
+    "tier2_meta": {
+      "experiment": "EXP-020",
+      "claim": "B2",
+      "created_utc": "2026-06-18T09:44:57.729542+00:00",
+      "host": "muntaserPC2024",
+      "os": "Windows-11-10.0.26200-SP0",
+      "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "python": "3.12.2",
+      "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+      "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+      "scratch_dir": "E:\\data\\code\\claudecode\\hashrope_b2_scratch",
+      "bench_sha256": "0f8639e90647c8054cb7c7e76727cc1c612e14c32ee79477c64c61b06b9cc26b",
+      "ropey": {
+        "version": "1.6.1",
+        "checksum": "93411e420bcd1a75ddd1dc3caf18c23155eda2c090631a85af21ba19e97093b5"
+      },
+      "K_A": 200,
+      "K_B": 50,
+      "tier": "2",
+      "sizes": [
+        3000000,
+        10000000
+      ],
+      "seeds": [
+        1,
+        2,
+        3
+      ],
+      "invocations": 3,
+      "last_write_utc": "2026-06-18T10:40:04.995461+00:00"
+    },
+    "error_model": "mean +/- sample SD (n-1) across n>=9 process invocations; paired sign test for regime B"
+  },
+  "regimeA": {
+    "per_n": {
+      "1000": {
+        "hashrope_ns": {
+          "mean": 1598.8869765917725,
+          "sd": 45.320923764766306,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 314.99336671016954,
+          "sd": 16.89192541402751,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 5.093664247581966,
+          "sd": 0.38456657775078046,
+          "n": 9
+        }
+      },
+      "3000": {
+        "hashrope_ns": {
+          "mean": 2552.7404453725517,
+          "sd": 83.79827451494262,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 248.76300840625873,
+          "sd": 3.955932707814534,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 10.265399277795625,
+          "sd": 0.41569697373202064,
+          "n": 9
+        }
+      },
+      "10000": {
+        "hashrope_ns": {
+          "mean": 4218.456457691652,
+          "sd": 180.6738248379057,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 285.0043099625086,
+          "sd": 15.978334305481301,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 14.839100661098543,
+          "sd": 0.9791128993518682,
+          "n": 9
+        }
+      },
+      "30000": {
+        "hashrope_ns": {
+          "mean": 6295.329270885965,
+          "sd": 103.20229411216604,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 335.01323548001056,
+          "sd": 4.696039568077989,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 18.79356711848616,
+          "sd": 0.35082548322153995,
+          "n": 9
+        }
+      },
+      "100000": {
+        "hashrope_ns": {
+          "mean": 8839.101646224146,
+          "sd": 149.03291844770055,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 402.61316635031807,
+          "sd": 6.766874662938649,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 21.96183472232945,
+          "sd": 0.6109947225718425,
+          "n": 9
+        }
+      },
+      "300000": {
+        "hashrope_ns": {
+          "mean": 10735.30484126984,
+          "sd": 94.33420010985806,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 506.459563741298,
+          "sd": 4.419990788642089,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 21.19808847030079,
+          "sd": 0.2519844085220343,
+          "n": 9
+        }
+      },
+      "1000000": {
+        "hashrope_ns": {
+          "mean": 12990.478198653198,
+          "sd": 187.8447560662729,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 621.4692768079863,
+          "sd": 17.823799845187978,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 20.918277344001773,
+          "sd": 0.6750461636704346,
+          "n": 9
+        }
+      },
+      "3000000": {
+        "hashrope_ns": {
+          "mean": 16712.21550925926,
+          "sd": 1215.936264643703,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 925.9708265122806,
+          "sd": 127.61550743633329,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 18.24606982870728,
+          "sd": 1.8429643198944732,
+          "n": 9
+        }
+      },
+      "10000000": {
+        "hashrope_ns": {
+          "mean": 17060.10537037037,
+          "sd": 714.7990478122631,
+          "n": 9
+        },
+        "ropey_ns": {
+          "mean": 1225.5861247108444,
+          "sd": 117.97554607051703,
+          "n": 9
+        },
+        "C_hashrope_over_ropey": {
+          "mean": 14.043142874967986,
+          "sd": 1.5485019401859632,
+          "n": 9
+        }
+      }
+    },
+    "slope": {
+      "hashrope": {
+        "tier1_only_Nrange": [
+          10000,
+          1000000
+        ],
+        "tier1_only_per_run_slope": {
+          "mean": 0.24159426467716233,
+          "sd": 0.007118602622438197,
+          "n": 9
+        },
+        "tier1_only_means_slope": 0.24146911006310273,
+        "tier1_only_means_r2": 0.9681955293437936,
+        "tier12_headline_Nrange": [
+          10000,
+          10000000
+        ],
+        "tier12_headline_means_slope": 0.202311630845865,
+        "tier12_headline_means_r2": 0.9517700959187396
+      },
+      "ropey": {
+        "tier1_only_Nrange": [
+          10000,
+          1000000
+        ],
+        "tier1_only_per_run_slope": {
+          "mean": 0.1714863310949648,
+          "sd": 0.008345589886749752,
+          "n": 9
+        },
+        "tier1_only_means_slope": 0.1713128407330625,
+        "tier1_only_means_r2": 0.9960667947118277,
+        "tier12_headline_Nrange": [
+          10000,
+          10000000
+        ],
+        "tier12_headline_means_slope": 0.2122827201341328,
+        "tier12_headline_means_r2": 0.9788395531620263
+      }
+    }
+  },
+  "regimeB": {
+    "r1": {
+      "per_n": {
+        "1000": {
+          "hashrope_ns": {
+            "mean": 1580.7904398944163,
+            "sd": 25.51958018561223,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 4674.062199508481,
+            "sd": 36.53580483253568,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 2.9572613229571187,
+            "sd": 0.03735145516254229,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "3000": {
+          "hashrope_ns": {
+            "mean": 3011.781255866792,
+            "sd": 45.1486430533585,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 13388.726516563487,
+            "sd": 379.01763204005755,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 4.445252528509791,
+            "sd": 0.09453832363817856,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "10000": {
+          "hashrope_ns": {
+            "mean": 5324.556957941139,
+            "sd": 145.61176454723775,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 43374.64254830917,
+            "sd": 360.7665429146134,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 8.150336388890823,
+            "sd": 0.17877755392633055,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "30000": {
+          "hashrope_ns": {
+            "mean": 7425.344574069543,
+            "sd": 198.28079467641749,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 129390.4511111111,
+            "sd": 892.3327738530949,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 17.437797091218695,
+            "sd": 0.5292390398400414,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "100000": {
+          "hashrope_ns": {
+            "mean": 9049.197258532304,
+            "sd": 61.96251973026382,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 430402.8051851851,
+            "sd": 3212.4261363748456,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 47.56431561211844,
+            "sd": 0.4581875249547827,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "300000": {
+          "hashrope_ns": {
+            "mean": 10274.584622222223,
+            "sd": 232.00987189899857,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 1287816.1111111112,
+            "sd": 11017.983091469661,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 125.38915794121968,
+            "sd": 2.656286242200507,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "1000000": {
+          "hashrope_ns": {
+            "mean": 11661.922222222222,
+            "sd": 154.43503285472312,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 4311255.514814815,
+            "sd": 34608.389123669316,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 369.74012668098686,
+            "sd": 5.440231034876202,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "3000000": {
+          "hashrope_ns": {
+            "mean": 13605.454166666666,
+            "sd": 381.54683815624946,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 13827747.994444445,
+            "sd": 65285.183044381876,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 1016.9531502865535,
+            "sd": 24.84563770766759,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "10000000": {
+          "hashrope_ns": {
+            "mean": 16460.86,
+            "sd": 254.82411699052318,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 47755458.968888886,
+            "sd": 242372.09381396451,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 2901.829566443536,
+            "sd": 51.3542662801941,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        }
+      },
+      "Nstar_id": 1000,
+      "speedup_monotone_increasing": true,
+      "percycle_slope_hashrope_N>=10k": {
+        "slope": 0.1503787362083282,
+        "r2": 0.972458353733609
+      },
+      "percycle_slope_ropey_N>=10k": {
+        "slope": 1.0131399020815015,
+        "r2": 0.999882727491476
+      }
+    },
+    "r0.1": {
+      "per_n": {
+        "1000": {
+          "hashrope_ns": {
+            "mean": 16683.155976295748,
+            "sd": 430.9242940632332,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 8196.643774158865,
+            "sd": 153.51508459131657,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.49161364585461603,
+            "sd": 0.015989497925866316,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "3000": {
+          "hashrope_ns": {
+            "mean": 24824.709392141238,
+            "sd": 566.5835022492463,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 16376.794376101578,
+            "sd": 210.65230640354304,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.6600297602499616,
+            "sd": 0.018420867740022023,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "10000": {
+          "hashrope_ns": {
+            "mean": 37912.473869094516,
+            "sd": 1024.793082178471,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 46994.79602693602,
+            "sd": 495.6983194656633,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 1.2402720981912778,
+            "sd": 0.03212150566863076,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "30000": {
+          "hashrope_ns": {
+            "mean": 55655.78303921569,
+            "sd": 1226.9920242364046,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 133938.3838888889,
+            "sd": 1903.2588975992733,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 2.4074334324648454,
+            "sd": 0.05600372148398886,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "100000": {
+          "hashrope_ns": {
+            "mean": 82104.13292929293,
+            "sd": 961.7214749739122,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 434926.8592592593,
+            "sd": 2289.692770529755,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 5.297755733019471,
+            "sd": 0.053598884364870085,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "300000": {
+          "hashrope_ns": {
+            "mean": 105969.67059523809,
+            "sd": 1438.3732025614229,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 1293231.7666666666,
+            "sd": 8460.476772576094,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 12.205148255749545,
+            "sd": 0.12787401287640388,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "1000000": {
+          "hashrope_ns": {
+            "mean": 133990.84444444443,
+            "sd": 1018.4397369897788,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 4309878.666666667,
+            "sd": 23933.668592614715,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 32.16777117033135,
+            "sd": 0.372966704762308,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "3000000": {
+          "hashrope_ns": {
+            "mean": 157476.53222222222,
+            "sd": 5902.7142032057145,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 14007163.833333334,
+            "sd": 490472.57530157676,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 89.0056093551519,
+            "sd": 3.106890813876514,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "10000000": {
+          "hashrope_ns": {
+            "mean": 185383.14370370368,
+            "sd": 17237.845242849955,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 49106699.42222222,
+            "sd": 4344673.978298936,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 264.98558975052725,
+            "sd": 2.6639030818177423,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        }
+      },
+      "Nstar_id": 10000,
+      "speedup_monotone_increasing": true,
+      "percycle_slope_hashrope_N>=10k": {
+        "slope": 0.2273018660078418,
+        "r2": 0.9668612810477387
+      },
+      "percycle_slope_ropey_N>=10k": {
+        "slope": 1.00662958893232,
+        "r2": 0.9996293405593989
+      }
+    },
+    "r0.01": {
+      "per_n": {
+        "1000": {
+          "hashrope_ns": {
+            "mean": 179366.73111111112,
+            "sd": 1869.9938654696682,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 45350.88764853504,
+            "sd": 1374.3165795717432,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.2528357257218892,
+            "sd": 0.0070335060652436335,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "3000": {
+          "hashrope_ns": {
+            "mean": 274988.67,
+            "sd": 2251.326530936815,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 47796.40730158729,
+            "sd": 336.89901504706137,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.17382005993895264,
+            "sd": 0.0015892162271902938,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "10000": {
+          "hashrope_ns": {
+            "mean": 360517.83111111115,
+            "sd": 4062.150897067218,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 80593.59829059831,
+            "sd": 1898.1860413989432,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.2235570400606547,
+            "sd": 0.004984326194854705,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "30000": {
+          "hashrope_ns": {
+            "mean": 477231.51037037035,
+            "sd": 6453.783404903003,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 170809.61629629627,
+            "sd": 2639.393833323736,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.3579405073543161,
+            "sd": 0.004993679711371715,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "100000": {
+          "hashrope_ns": {
+            "mean": 644549.5677777778,
+            "sd": 9164.950440555835,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 476360.05629629624,
+            "sd": 6411.841539022536,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 0.7391069084727184,
+            "sd": 0.00820418347274794,
+            "n": 9
+          },
+          "sign_wins": 0,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "300000": {
+          "hashrope_ns": {
+            "mean": 863604.911111111,
+            "sd": 11417.619469178368,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 1344026.9777777777,
+            "sd": 9105.671889742414,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 1.5565017107077275,
+            "sd": 0.019965310592465372,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "1000000": {
+          "hashrope_ns": {
+            "mean": 1177128.5037037036,
+            "sd": 35669.598960603194,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 4479336.640740741,
+            "sd": 96226.79952565451,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 3.8066752017571805,
+            "sd": 0.07457486572923738,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "3000000": {
+          "hashrope_ns": {
+            "mean": 1512105.6222222222,
+            "sd": 128234.90249785036,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 14323036.266666666,
+            "sd": 1189207.581056231,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 9.473546105785445,
+            "sd": 0.07003069813391584,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        },
+        "10000000": {
+          "hashrope_ns": {
+            "mean": 1794955.8755555556,
+            "sd": 158756.26781088478,
+            "n": 9
+          },
+          "ropey_ns": {
+            "mean": 49801798.88888889,
+            "sd": 4915375.8370007025,
+            "n": 9
+          },
+          "speedup_ropey_over_hashrope": {
+            "mean": 27.72749032941564,
+            "sd": 0.3040478166163455,
+            "n": 9
+          },
+          "sign_wins": 9,
+          "sign_n": 9,
+          "sign_p_two_sided": 0.00390625
+        }
+      },
+      "Nstar_id": 300000,
+      "speedup_monotone_increasing": false,
+      "percycle_slope_hashrope_N>=10k": {
+        "slope": 0.23953830786021707,
+        "r2": 0.9943390977323252
+      },
+      "percycle_slope_ropey_N>=10k": {
+        "slope": 0.942588523163695,
+        "r2": 0.9957982008290821
+      }
+    }
+  },
+  "memory": {
+    "per_n": {
+      "1000": {
+        "nodes_initial": {
+          "mean": 3,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 91333.33333333333,
+          "sd": 315.76943065048795,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 45.665333333333336,
+          "sd": 0.1578174050392854,
+          "n": 3
+        }
+      },
+      "3000": {
+        "nodes_initial": {
+          "mean": 11,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 108592.66666666667,
+          "sd": 354.062612165325,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 54.29066666666667,
+          "sd": 0.17697834142440516,
+          "n": 3
+        }
+      },
+      "10000": {
+        "nodes_initial": {
+          "mean": 40,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 124056.66666666667,
+          "sd": 232.44856061789957,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 62.00866666666666,
+          "sd": 0.11603591398068352,
+          "n": 3
+        }
+      },
+      "30000": {
+        "nodes_initial": {
+          "mean": 118,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 132519.33333333334,
+          "sd": 73.9075999700527,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 66.20066666666666,
+          "sd": 0.03695041722813198,
+          "n": 3
+        }
+      },
+      "100000": {
+        "nodes_initial": {
+          "mean": 394,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 137672,
+          "sd": 155.23208431248997,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 68.63866666666667,
+          "sd": 0.07771958140220141,
+          "n": 3
+        }
+      },
+      "300000": {
+        "nodes_initial": {
+          "mean": 1176,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 142200.33333333334,
+          "sd": 198.7217485161937,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 70.51233333333333,
+          "sd": 0.09943004240838531,
+          "n": 3
+        }
+      },
+      "1000000": {
+        "nodes_initial": {
+          "mean": 3911,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 152141.66666666666,
+          "sd": 76.39589866827494,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 74.11533333333334,
+          "sd": 0.037740340927623774,
+          "n": 3
+        }
+      },
+      "3000000": {
+        "nodes_initial": {
+          "mean": 11721,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 170104,
+          "sd": 255.99218738078707,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 79.19166666666666,
+          "sd": 0.12809892010994597,
+          "n": 3
+        }
+      },
+      "10000000": {
+        "nodes_initial": {
+          "mean": 39070,
+          "sd": 0.0,
+          "n": 3
+        },
+        "nodes_after": {
+          "mean": 212240,
+          "sd": 259.9307600111999,
+          "n": 3
+        },
+        "nodes_per_op": {
+          "mean": 86.58500000000001,
+          "sd": 0.1299653800056007,
+          "n": 3
+        }
+      }
+    },
+    "nodes_per_op_vs_log2N": {
+      "slope_per_doubling": 2.6778735592586465,
+      "intercept": 23.079529996164247,
+      "r2": 0.95877421919198
+    }
+  },
+  "verdict": {
+    "criterion_ii_subLinearEdit_PASS": true,
+    "criterion_ii_detail": {
+      "tier12_slope": 0.202311630845865,
+      "tier1_per_run_slope_mean": 0.24159426467716233,
+      "bar": 0.3
+    },
+    "criterion_iii_differentiatorWin_PASS": true,
+    "criterion_iii_detail": {
+      "at_N": 1000000,
+      "sign_wins": 9,
+      "sign_n": 9,
+      "sign_p_two_sided": 0.00390625,
+      "speedup_mean": 369.74012668098686,
+      "speedup_bar": 2.0,
+      "monotone_increasing": true
+    },
+    "criterion_iv_editConstant": {
+      "C_at_1M_mean": 20.918277344001773,
+      "bar": 30.0,
+      "competitive_clause_stands": true
+    }
+  }
+}

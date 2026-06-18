@@ -503,3 +503,91 @@ block, strong (17x-67x) on memory across deployed block sizes, byte-perfect, cro
 confirmed at N*=16k.
 
 EXP-019 Milestone B closed. EXP-019 closed.
+
+---
+
+## EXP-020: Competitive incremental edit -- hashrope (Rust) vs Ropey 1.6.1 (B2) -- SUPPORTED
+
+**Date:** 2026-06-18 (confirmatory)
+**Type:** competitive baseline (Leg 1 of unification thesis), Rust-to-Rust
+**Status:** B2 SUPPORTED -- all HARD criteria met VERBATIM (crate 0.3.1, n=9 = 3 seeds x 3 invocations)
+
+**Setup:** vendored Ropey **1.6.1** (pinned dev-dep, crates.io checksum 93411e42...093b5;
+transitive smallvec 1.15.2, str_indices 0.4.4) as the incremental-edit specialist baseline.
+Standalone downstream scratch crate (read-only path dep on the canonical crate; archived at
+exp_020_edit/scratch_crate/). criterion bench (harness=false), arena-drop excluded (iter_batched
+PerIteration), power-cache warmed, non-lazy arena (fingerprint cost INCLUDED on every edit). ASCII
+buffers so char_idx == byte_idx. ONE seeded SplitMix64 churn sequence, identical across arms. Two
+regimes: A = K_A=200 churn edits timed (per-edit); B = K_B=50 cycles of [edits -> whole-buffer
+fingerprint query], query:edit ratio r in {1, 0.1, 0.01} (r=1 = headline); hashrope query = read
+root hash O(1), Ropey query = recompute hashrope's own PolynomialHash over materialized bytes O(N)
+(apples-to-apples, maintained-vs-recomputed). Sizes N in {1k..1M} (tier-1) + {3M, 10M} (tier-2).
+rustc 1.94.0, i9-14900HX. Results `experiments/exp_020_edit/results/exp020_analysis_latest.json`.
+
+**Key result (win-first):** On edit+identity workloads at LLM-context scale, hashrope is
+**net-superior to Ropey and the advantage grows without bound** -- it reads the maintained
+whole-buffer fingerprint in O(1) where Ropey must recompute it in O(N) per query -- while editing in
+the **same O(log N) class** at a bounded, *declining* constant factor. At r=1 hashrope wins at EVERY
+N tested, monotone-growing **369.7x at 1M (9/9 paired sign, p=0.0039)** to **2901.8x at 10M**.
+
+**Regime B r=1 -- per-cycle latency, speedup (Ropey/hashrope, paired), n=9:**
+
+| N | hashrope | Ropey | speedup | sign |
+|---|---|---|---|---|
+| 1k | 1.58 us | 4.67 us | 3.0x | 9/9 |
+| 100k | 9.05 us | 0.430 ms | 47.6x | 9/9 |
+| **1M** | **11.66 us** | **4.311 ms** | **369.7x** | **9/9 (p=0.0039)** |
+| 3M | 13.61 us | 13.83 ms | 1017x | 9/9 |
+| **10M** | **16.46 us** | **47.76 ms** | **2901.8x** | **9/9** |
+
+The mechanism is explicit in the per-cycle log-log slopes (N>=10k): Ropey **1.013** (O(N) recompute
+dominates the cycle) vs hashrope **0.150** (O(1) fingerprint read + log-N edits), so the gap must
+widen with N.
+
+**Regime A -- edit class (criterion ii) and constant factor (criterion iv), n=9:** hashrope per-edit
+log-log slope, headline tier-1+2 (10k-10M) = **0.202** (R2=0.95); tier-1-only per-run
+**0.242+/-0.007**; Ropey 0.212 -- the two are the SAME O(log N) class. The raw-edit constant
+C = hashrope/Ropey per-edit = **20.92x+/-0.68 at 1M** (criterion (iv) <=30x -> "competitive on raw
+edit" clause stands), and C *peaks at 21.96x @100k then declines to 14.04x @10M* -- a bounded factor
+converging as both arms go log N (per-edit: hashrope 4.22 us @10k -> 17.06 us @10M; Ropey 0.285 us
+-> 1.23 us).
+
+**Correctness (criterion i, HARD):** byte-identity between arms AND maintained-hash == from-scratch
+recompute, 0 mismatches at every edit step across all seeds (non-vacuous via a bit-flip negative
+control on the maintained hash).
+
+**Honest negatives (reported in full, not the thesis):**
+- *Raw edit* -- Ropey wins by ~14-22x (its in-place gap-buffer edit vs hashrope's persistent
+  split/concat that also maintains the fingerprint). The bounded, declining C is the honest price of
+  maintained content-identity.
+- *Edit+identity crossover N\*_id moves right as queries thin out* -- r=1 below 1k (hashrope wins
+  everywhere tested), r=0.1 at 10k, r=0.01 at 300k. With few queries per edit, Ropey's cheaper edits
+  dominate until N is large enough that the O(N) recompute bites.
+- *Persistent-arena memory growth* -- under linear churn the arena retains **+2.7 nodes per doubling
+  of N** (45.7 -> 86.6 retained nodes/op, R2=0.96): dead path-nodes from each edit are not freed
+  (persistence). This is the exact flip side of the EXP-004 branching win -- the same immutability
+  that makes O(B log N) branching cheap costs retained nodes under in-place-style churn. Ropey edits
+  in place.
+
+**A library bug was found and fixed mid-experiment (documented, not hidden):** the first
+confirmatory run on crate 0.3.0 FAILED criteria (ii) and (iii) -- per-edit scaled ~O(N) (slope 0.89)
+and the r=1 advantage peaked then declined (4.83x @300k -> 4.39x @1M) -- because Arena::from_bytes
+built the whole input as a single leaf, making the first split of every edit O(N). The
+bounded-512-byte-leaf fix shipped as **crate 0.3.1** (commit 98a9209), passed the full 107-test
+crate gate + the b2 correctness test + the repeat-on-chunked-base diagnostic, and tier-1 was re-run
+with the promotion criterion **UNCHANGED** (LOGBOOK 2026-06-18; the 0.3.0 numbers are retained as
+the pre-fix baseline at results/_prefix_v0.3.0_baseline/). The bug had been *under-selling* hashrope;
+the fix removed an artificial handicap rather than flattering it.
+
+**Honesty note:** this is a Rust-to-Rust comparison (no interpreter amplification); the numbers are
+direct. LEAF_CAP=512 is finer than Ropey's ~1 KB chunk target, which conservatively handicaps
+hashrope (deeper tree). **Ripple:** 0.3.1's chunked from_bytes changes a freshly built rope from 1
+leaf to ~N/512 leaves; EXP-004/EXP-019 absolute memory numbers may shift (qualitative claims
+unaffected; the crate's own e6/e7 tests pass under 0.3.1) -- to re-validate at paper finalization.
+
+**Net:** B2 SUPPORTED -- hashrope edits in Ropey's O(log N) class at a bounded, declining constant
+factor, and is decisively net-superior (370x at 1M, growing to 2900x at 10M, 9/9 paired) on the
+edit+identity workloads that motivate a content-indexed structure. This closes Competitive Leg 1,
+completing the four-leg competitive spine (B1 EXP-017, B2 EXP-020, B3 EXP-019).
+
+EXP-020 closed.

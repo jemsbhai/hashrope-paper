@@ -2212,3 +2212,106 @@ Before the ropey dev-dep is added, cargo test fails to COMPILE (confirmed-red on
 Muntaser's machine); adding ropey 1.6.1 turns it GREEN (arms agree). A red on the
 assertions (not the compile) would be a real hash-maintenance bug under churn -- a
 finding, investigated, not retrofitted.
+
+---
+
+## EXP-020 -- Competitive Leg 1 (claim B2): execution + verdict -- B2 SUPPORTED (crate 0.3.1)
+
+**Date:** 2026-06-18. **Status:** CLOSED. All HARD criteria met on crate 0.3.1, n=9
+(3 seeds x 3 invocations); the promotion criterion (kickoff 2026-06-16) was evaluated VERBATIM,
+no bar lowered, no retrofit. The arc included a library bug found mid-experiment, fixed, and
+re-run -- documented in full below.
+
+### Apparatus deviation from kickoff (recorded, not silent)
+
+The kickoff "Artifacts" list placed the harness under packages/rust/{tests,benches}/. It was
+instead built as a standalone downstream crate, hashrope_b2_scratch (publish=false), OUTSIDE both
+repos, with a read-only path dependency on the canonical crate
+(hashrope = { path = "../hashrope/packages/rust" }) plus ropey 1.6.1. Reason: the canonical crate
+is in production and is touched only for real bugfixes, never benchmark scaffolding. Artifacts:
+correctness test hashrope_b2_scratch/tests/test_b2_correctness.rs; bench
+hashrope_b2_scratch/benches/bench_b2_edit.rs; cross-run driver
+experiments/exp_020_edit/exp020_bench_driver.py; analysis exp_020_edit/exp020_analysis.py;
+results exp_020_edit/results/. The scratch crate source is archived into the paper repo at
+exp_020_edit/scratch_crate/ at close-out for reproducibility.
+
+### Ropey provenance (locked)
+
+ropey 1.6.1, crates.io checksum
+93411e420bcd1a75ddd1dc3caf18c23155eda2c090631a85af21ba19e97093b5; transitive dev-deps
+smallvec 1.15.2, str_indices 0.4.4. [dev-dependencies] only; the shipped crate keeps zero runtime
+deps. rustc 1.94.0, i9-14900HX.
+
+### TDD red-first (criterion-i harness)
+
+test_b2_correctness.rs confirmed RED (fails to COMPILE without the ropey dep), then GREEN on
+Muntaser's machine -- arms agree (byte-identity + maintained-hash-vs-recompute through a
+SplitMix64 churn sequence, periodic validate). Negative control (XOR one bit of the maintained
+hash) makes it fail -> the assertion is non-vacuous.
+
+### First confirmatory run (crate 0.3.0) FAILED (ii) and (iii) -- reported in full
+
+Regime B r=1 won at every N but only 2.52x @1k rising to 4.83x @100k-300k then DECLINING to
+4.39x @1M. Two HARD criteria failed: (ii) regime-A per-edit log-log slope ~0.89 (edits ~O(N),
+1.87 us @1k -> 407 us @1M; target <=0.3); (iii) the r=1 advantage peaked at ~100k-300k and
+declined by 1M (not monotone-growing). (iv) C @1M = 506x. Real measurements, recorded as-is; they
+triggered a root-cause hunt, not a retrofit. Pre-fix baseline retained at
+results/_prefix_v0.3.0_baseline/.
+
+### Root cause: single-leaf from_bytes (a library bug that UNDER-sold hashrope)
+
+Diagnostic: under 0.3.0, Arena::from_bytes built the WHOLE input as ONE leaf (h_init=0 at all N;
+Leaf had no size cap). Splitting a fat leaf copies O(leaf_len)=O(N) bytes, so the FIRST split of
+every edit on a freshly built rope was O(N) -- exactly the 0.89 slope. NOT a balance bug:
+post-churn height was ~log N, and the orphaned Arena::rebalance (rope.rs:446, dead-code-warned) is
+unused (concat uses join) -- a red herring. The bug made hashrope look WORSE than it is.
+
+### Fix: bounded-leaf from_bytes -- canonical crate 0.3.1 (commit 98a9209)
+
+from_bytes now splits input into <=512-byte leaves (LEAF_CAP=512) and combines them bottom-up via
+concat into a balanced tree, so split/concat are O(log N) immediately after construction. Surgical:
+rope.rs changed only inside from_bytes (git diff @@ -689,11 +689,34 @@). 512 is FINER than Ropey's
+~1 KB chunk target -- a deeper tree / more per-edit log-work, the conservative (anti-flattering)
+direction; recorded as the final value. Behavior change: a freshly built rope is now ~N/512 leaves,
+so height/node_count grow by design; byte round-trip and the maintained whole-buffer hash are
+unchanged (== hash_bytes of the same content). CHANGELOG 0.3.1 + version bump committed with the fix.
+
+### Safety gate (full -- change is in the production crate, so gated hard)
+
+All green on Muntaser's machine: the full 107-test crate suite to completion (96 lib unit +
+diag_substr + e1 26s + e2 + e3_repeat 264s incl 10 GB materialization + e4 + e5_sliding 250s +
+e6_memory[3, incl e6_memory_chunked_rope] + e7_tree_height[2, incl e7_chunked_insertion]); the b2
+correctness test under the patched crate; the repeat-on-chunked-base diagnostic (ALL_OK=true, bases
+100-50000 x q 1-50). Nothing regressed.
+
+### Re-run (crate 0.3.1), tier-1 (1k-1M) + tier-2 (3M-10M), n=9, criterion UNCHANGED -- VERDICT
+
+(i) [HARD] Correctness: byte-identity + maintained-hash==recompute, 0 mismatches every step. MET.
+(ii) [HARD] Sub-linear edit class: hashrope regime-A per-edit log-log slope, headline tier-1+2
+(10k-10M) = 0.202 (R2=0.95); tier-1-only per-run 0.242+/-0.007; Ropey 0.212 alongside. Both <=0.3
+-> same O(log N) class. PASS.
+(iii) [HARD] Differentiator win @1M: regime B r=1, hashrope 11.66+/-0.15 us vs Ropey 4311+/-35 us
+= 369.7x+/-5.4 (9/9 paired sign, p=0.0039), advantage MONOTONE-growing across every N (3.0x @1k ->
+47.6x @100k -> 369.7x @1M -> 1017x @3M -> 2901.8x @10M). PASS. Mechanism: per-cycle slopes ropey
+1.013 (O(N) recompute) vs hashrope 0.150 (O(1) read + log-N edits).
+(iv) Edit-only constant (framing rule, not pass/fail): C = hashrope/Ropey per-edit @1M =
+20.92x+/-0.68 (<=30x -> "competitive on raw edit" clause STANDS as written); C peaks 21.96x @100k
+then declines to 14.04x @10M (bounded, converging).
+(v) Honest negatives: Ropey wins raw edit ~14-22x; edit+identity crossover N*_id moves right as
+queries thin (r=1 below 1k, r=0.1 at 10k, r=0.01 at 300k); persistent arena retains +2.7
+nodes/doubling under linear churn (45.7 -> 86.6 nodes/op, R2=0.96) -- the EXP-004 flip side.
+(vi) All numbers mean+/-SD (n=9); paired sign test for (iii).
+
+### Ripple flagged (re-validate at paper finalization, not now)
+
+0.3.1's chunked from_bytes makes a freshly built rope ~N/512 leaves (was 1). EXP-004
+(branch/snapshot memory) and EXP-019 (COW vs PagedAttention) absolute numbers may shift; their
+qualitative claims (O(B log N), compression ratios, COW) are unaffected, and the crate's own
+e6_memory / e7_tree_height tests pass under 0.3.1. Re-run those two experiments' numbers under
+0.3.1 when assembling final figures.
+
+### Outcome
+
+B2 -> SUPPORTED. Results experiments/exp_020_edit/results/exp020_analysis_latest.json. This closes
+Competitive Leg 1 -- the fourth and final leg (B1 EXP-017 / B2 EXP-020 / B3 EXP-019 x2). EXP-020
+closed.
