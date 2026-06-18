@@ -236,15 +236,21 @@ def build_r2_stream(corpus_tokens: list[int], L: int, n_queries: int,
 # R1 stream: realistic ShareGPT/LMSYS multi-turn replay (reuses src.realpairs)
 # ----------------------------------------------------------------------------
 
-def build_r1_stream(dataset_path: str, n_pairs: int, seed: int) -> dict:
+def build_r1_stream(dataset_path: str, n_pairs: int, seed: int,
+                    tokenizer_name: str = "gpt2") -> dict:
     """Realistic stream from a canonical conversation dataset (lazy import:
-    needs transformers for gpt2 tokenization). Each item = (cached=turns[:t],
-    query=turns[:t+1]) with the BPE-determined token-LCP as the oracle.
+    needs transformers). Each item = (cached=turns[:t], query=turns[:t+1]) with
+    the BPE-determined token-LCP as the oracle.
+
+    tokenizer_name should be the SERVING model (EXP-015 tokenizes with the serving
+    model's tokenizer throughout, so identifier IDs == served IDs); it defaults to
+    gpt2 only for standalone/EXP-017-style use.
 
     Returns {regime, dataset, items:[{cached_tokens, query_tokens, oracle_lcp, conv_id}]}.
     """
     from src.realpairs import load_real_pairs  # lazy: transformers dependency
-    pairs = load_real_pairs(dataset_path, n_pairs=n_pairs, seed=seed)
+    pairs = load_real_pairs(dataset_path, n_pairs=n_pairs, seed=seed,
+                            tokenizer_name=tokenizer_name)
     items = [{"cached_tokens": p["cached_tokens"],
               "query_tokens": p["query_tokens"],
               "oracle_lcp": p["oracle_token_lcp"],
