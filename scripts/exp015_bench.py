@@ -330,12 +330,25 @@ def run_worker(args) -> None:
     seed = cell["seed"]
     args.seed_for_engine = seed * 1000 + cell["inv"]
     stream = build_stream(regime, args, seed, cell.get("L"))
+    n_items = stream["n_queries"] if regime == "R2" else len(stream["items"])
+    if n_items == 0:
+        print("\n".join([
+            "", "=" * 72,
+            f"EXP-015 ABORT ({cell_id(cell)}) -- request stream is EMPTY (n_items=0).",
+            "  No requests to serve or identify, so this cell would record nothing.",
+            "  For R1 this usually means the conversation datasets were not found at",
+            f"  {REPO_ROOT / 'data' / 'canonical'}",
+            f"  (expected: {', '.join(args.r1_datasets)}).",
+            "  Commit/push the dataset files and `git pull` on the node, or pass",
+            "  --synthetic for a no-data pipeline check. Aborting.",
+            "=" * 72,
+        ]), flush=True)
+        sys.exit(1)
 
     track_b = run_track_b(stream) if cell.get("run_identification", True) else None
     track_a = run_track_a(stream, regime, cell["cache_on"],
                           cell["nvml_indices"], cell["tp"], args)
 
-    n_items = stream["n_queries"] if regime == "R2" else len(stream["items"])
     record = {"cell_id": cell_id(cell), "regime": regime,
               "cache_on": cell["cache_on"], "seed": seed, "inv": cell["inv"],
               "L": cell.get("L"), "nvml_indices": cell["nvml_indices"],
@@ -434,7 +447,11 @@ def schedule_parallel(args, cells, gpus, tmp_dir, poll=0.5) -> list[dict]:
         time.sleep(poll)
         for gpu in [g for g, (p, _, _) in running.items() if p.poll() is not None]:
             p, cell, out = running.pop(gpu)
-            results.append(_collect(out, cell)); done += 1
+            if p.returncode != 0:
+                results.append({"cell_id": cell_id(cell), "error": f"worker rc={p.returncode}"})
+            else:
+                results.append(_collect(out, cell))
+            done += 1
             free.append(gpu)
             print(f"[orch] [{done}/{total}] done {cell_id(cell)} (rc={p.returncode})", flush=True)
             time.sleep(args.cooldown)
@@ -453,8 +470,11 @@ def schedule_sequential(args, cells, gpus, tmp_dir) -> list[dict]:
             continue
         cmd = _worker_cmd(args, cell, list(gpus), tp=len(gpus), out=out)
         print(f"[orch] [{i}/{total}] launch {cell_id(cell)} tp={len(gpus)}", flush=True)
-        subprocess.run(cmd, env=_worker_env(list(gpus)), check=False)
-        results.append(_collect(out, cell))
+        cp = subprocess.run(cmd, env=_worker_env(list(gpus)), check=False)
+        if cp.returncode != 0:
+            results.append({"cell_id": cell_id(cell), "error": f"worker rc={cp.returncode}"})
+        else:
+            results.append(_collect(out, cell))
         time.sleep(args.cooldown)
     return results
 
