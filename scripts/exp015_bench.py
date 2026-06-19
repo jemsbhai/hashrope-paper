@@ -459,7 +459,43 @@ def schedule_sequential(args, cells, gpus, tmp_dir) -> list[dict]:
     return results
 
 
+def _preflight_gpu(args) -> None:
+    """Fail LOUDLY before any cell if the engine track cannot run. Without this,
+    a torch/CUDA mismatch (torch.cuda.is_available()==False) silently skips Track
+    A in every cell and still 'completes' with empty energy data (see the
+    2026-06-19 first run). Pass --dry-run to intentionally skip the engine."""
+    if args.dry_run:
+        return
+    from src.exp015_serving import sglang_available, sglang_version
+    try:
+        import torch
+        cuda_ok = torch.cuda.is_available()
+        ndev = torch.cuda.device_count() if cuda_ok else 0
+        tver = torch.__version__
+    except Exception as e:
+        cuda_ok, ndev, tver = False, 0, f"import-failed ({e})"
+    if not sglang_available():
+        msg = [
+            "", "=" * 72,
+            "EXP-015 PREFLIGHT FAILED -- the GPU engine track cannot run.",
+            f"  sglang importable+CUDA: {sglang_available()} (version {sglang_version()})",
+            f"  torch: {tver} | torch.cuda.is_available(): {cuda_ok} | device_count: {ndev}",
+            "  -> Track A (energy/TTFT/throughput) would be SKIPPED in every cell,",
+            "     producing an empty-but-'completed' run. Aborting instead.",
+            "  Likely cause: torch installed for a CUDA version the node driver does",
+            "  not support. Reinstall torch matching `nvidia-smi` CUDA, e.g.:",
+            "     pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu121",
+            "  then verify: python -c \"import torch; print(torch.cuda.is_available(), torch.cuda.device_count())\"",
+            "  (must print True and the GPU count). Re-run --smoke before sbatch.",
+            "  To run WITHOUT the engine (identification only), pass --dry-run.",
+            "=" * 72,
+        ]
+        print("\n".join(msg), flush=True)
+        sys.exit(1)
+
+
 def run_orchestrator(args) -> None:
+    _preflight_gpu(args)
     gpus = args.gpus
     results_dir = REPO_ROOT / "experiments" / RESULTS_DIR_NAME / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
