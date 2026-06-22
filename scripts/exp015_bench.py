@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 EXP-015 driver (claim S3) -- two-layer energy/identification bench on a real
-SGLang serving stack. Orchestrator + worker (one fresh process per cell).
+vLLM serving stack. Orchestrator + worker (one fresh process per cell).
 
 Decision (LOGBOOK EXP-015, confirmed 2026-06-18): FULL RELAUNCH per invocation
 on both tracks -- the pre-registered "fresh process invocations" stands. Each
-cell launches its own SGLang engine, runs one steady-state window, tears down.
+cell launches its own vLLM engine, runs one steady-state window, tears down.
 
 GPU allocation (regime-dependent, pre-registered):
   R1 (realistic streams, ~2k-token prefixes): single-GPU cells run 4-way in
@@ -33,7 +33,7 @@ after the collaborator returns the artifacts) -- never inline, never retrofit.
 Validatable off-GPU: stream building, Track B (oracle/hashrope/flat), the R1
 parallel scheduler, the raw JSON schema, arg-parsing, and the --dry-run cell
 path all run on CPU. --synthetic bypasses the tokenizer for pipeline validation.
-The SGLang/NVML execution is the collaborator's smoke gate.
+The vLLM/NVML execution is the collaborator's smoke gate.
 
 Usage (confirmatory, per regime):
     python scripts/exp015_bench.py --regime R1 --gpus 0,1,2,3 \
@@ -47,7 +47,7 @@ Smoke (collaborator validates the pipeline first; tiny model, 1 GPU):
     python scripts/exp015_bench.py --regime R2 --smoke --gpus 0,1,2,3 \
         --model qwen/qwen2.5-0.5b-instruct
 
-Off-GPU pipeline check (no SGLang, no tokenizer):
+Off-GPU pipeline check (no engine, no tokenizer):
     python scripts/exp015_bench.py --regime R1 --smoke --dry-run --synthetic --gpus 0,1,2,3
 """
 from __future__ import annotations
@@ -117,10 +117,12 @@ def collect_env() -> dict:
     except Exception:
         env["torch_version"] = "unavailable"
     try:
-        from src.exp015_serving import sglang_version
-        env["sglang_version"] = sglang_version()
+        from src.exp015_serving import engine_name, engine_version
+        env["engine"] = engine_name()
+        env["engine_version"] = engine_version()
     except Exception:
-        env["sglang_version"] = "unavailable"
+        env["engine"] = "unknown"
+        env["engine_version"] = "unavailable"
     return env
 
 
@@ -251,12 +253,13 @@ def run_track_a(stream: dict, regime: str, cache_on: bool,
     """Serve the stream under one cache setting; measure GPU energy (NVML window),
     TTFT, throughput, cached_tokens. Skipped (graceful) off-GPU or in --dry-run."""
     from src.exp015_energy_probe import GpuEnergyProbe, energy_path, gpu_metadata
-    from src.exp015_serving import SglServingArm, sglang_available, sglang_version
+    from src.exp015_serving import (VllmServingArm, engine_available,
+                                    engine_name, engine_version)
 
-    if args.dry_run or not sglang_available():
+    if args.dry_run or not engine_available():
         return {"skipped": True,
-                "reason": "dry_run" if args.dry_run else "sglang_or_gpu_unavailable",
-                "sglang_version": sglang_version(),
+                "reason": "dry_run" if args.dry_run else "engine_or_gpu_unavailable",
+                "engine": engine_name(), "engine_version": engine_version(),
                 "energy_path": energy_path(nvml_indices)}
 
     if regime == "R2":
@@ -266,7 +269,7 @@ def run_track_a(stream: dict, regime: str, cache_on: bool,
         cached_entries = [it["cached_tokens"] for it in stream["items"]]
         queries = [it["query_tokens"] for it in stream["items"]]
 
-    arm = SglServingArm(args.model, cache_on=cache_on, tp_size=tp,
+    arm = VllmServingArm(args.model, cache_on=cache_on, tp_size=tp,
                         mem_fraction_static=args.mem_fraction_static,
                         context_length=args.context_length,
                         random_seed=args.seed_for_engine)
@@ -309,7 +312,7 @@ def run_track_a(stream: dict, regime: str, cache_on: bool,
                 "throughput_tok_s": thr_tok, "throughput_req_s": thr_req,
                 "ttft_ms": _stats(ttft_ms), "cached_tokens_per_req": cached_per_req,
                 "n_power_samples": er.n_samples, "engine_kwargs": arm.kwargs,
-                "sglang_version": sglang_version()}
+                "engine": engine_name(), "engine_version": engine_version()}
     finally:
         arm.shutdown()
 
@@ -486,7 +489,7 @@ def _preflight_gpu(args) -> None:
     2026-06-19 first run). Pass --dry-run to intentionally skip the engine."""
     if args.dry_run:
         return
-    from src.exp015_serving import sglang_available, sglang_version
+    from src.exp015_serving import engine_available, engine_name, engine_version
     try:
         import torch
         cuda_ok = torch.cuda.is_available()
@@ -494,11 +497,11 @@ def _preflight_gpu(args) -> None:
         tver = torch.__version__
     except Exception as e:
         cuda_ok, ndev, tver = False, 0, f"import-failed ({e})"
-    if not sglang_available():
+    if not engine_available():
         msg = [
             "", "=" * 72,
             "EXP-015 PREFLIGHT FAILED -- the GPU engine track cannot run.",
-            f"  sglang importable+CUDA: {sglang_available()} (version {sglang_version()})",
+            f"  {engine_name()} importable+CUDA: {engine_available()} (version {engine_version()})",
             f"  torch: {tver} | torch.cuda.is_available(): {cuda_ok} | device_count: {ndev}",
             "  -> Track A (energy/TTFT/throughput) would be SKIPPED in every cell,",
             "     producing an empty-but-'completed' run. Aborting instead.",
@@ -543,10 +546,11 @@ def run_orchestrator(args) -> None:
         cell_results = schedule_sequential(args, cells, gpus, tmp_dir)
 
     raw = {"experiment": "EXP-015", "claim": "S3", "regime": args.regime,
-           "description": "Two-layer energy/identification on a real SGLang stack: "
+           "description": "Two-layer energy/identification on a real vLLM stack: "
                           "engine cache {OFF,ON} x identifier {radix,hashrope,flat}",
            "env": env, "git_sha": git_sha, "git_dirty": git_dirty,
-           "provenance": {"model": args.model, "sglang_version": env.get("sglang_version"),
+           "provenance": {"model": args.model, "engine": env.get("engine"),
+                          "engine_version": env.get("engine_version"),
                           "hashrope_version": env.get("hashrope_version"),
                           "corpus_sha16": corpus_sha, "synthetic": args.synthetic,
                           "dry_run": args.dry_run, "max_new_tokens": args.max_new_tokens,
