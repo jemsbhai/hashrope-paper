@@ -37,15 +37,15 @@ The vLLM/NVML execution is the collaborator's smoke gate.
 
 Usage (confirmatory, per regime):
     python scripts/exp015_bench.py --regime R1 --gpus 0,1,2,3 \
-        --model Qwen/Qwen2.5-7B-Instruct --seeds 42,43,44 --invocations 3
+        --model Qwen/Qwen2.5-7B-Instruct-1M --seeds 42,43,44 --invocations 3
     python scripts/exp015_bench.py --regime R2 --gpus 0,1,2,3 \
-        --model Qwen/Qwen2.5-7B-Instruct --seeds 42,43,44 --invocations 3
+        --model Qwen/Qwen2.5-7B-Instruct-1M --seeds 42,43,44 --invocations 3
 
-Smoke (collaborator validates the pipeline first; tiny model, 1 GPU):
+Smoke (de-risks the binding constraint on the real 1M model before the grid):
     python scripts/exp015_bench.py --regime R1 --smoke --gpus 0 \
-        --model qwen/qwen2.5-0.5b-instruct
+        --model Qwen/Qwen2.5-7B-Instruct-1M
     python scripts/exp015_bench.py --regime R2 --smoke --gpus 0,1,2,3 \
-        --model qwen/qwen2.5-0.5b-instruct
+        --model Qwen/Qwen2.5-7B-Instruct-1M
 
 Off-GPU pipeline check (no engine, no tokenizer):
     python scripts/exp015_bench.py --regime R1 --smoke --dry-run --synthetic --gpus 0,1,2,3
@@ -71,8 +71,8 @@ if str(REPO_ROOT) not in sys.path:
 
 # Pre-registered defaults (LOGBOOK EXP-015 IVs)
 DEFAULT_SEEDS = [42, 43, 44]
-DEFAULT_R2_L = [131_072, 262_144, 393_216, 524_288, 1_048_576]  # ~128k..1M, straddles ~571k
-SMOKE_R2_L = [1_024, 4_096]
+DEFAULT_R2_L = [131_072, 262_144, 393_216, 524_288, 1_000_000]  # ~128k..1M (top=1e6 = Qwen2.5-1M usable ceiling), straddles ~571k
+SMOKE_R2_L = [1_000_000]  # smoke the binding constraint: 1M model at its near-ceiling L
 DEFAULT_R1_DATASETS = ["sharegpt_sample.jsonl", "lmsys_sample.jsonl"]
 TAIL_TOKENS = 1024
 TIMING_REPS = 5
@@ -269,10 +269,14 @@ def run_track_a(stream: dict, regime: str, cache_on: bool,
         cached_entries = [it["cached_tokens"] for it in stream["items"]]
         queries = [it["query_tokens"] for it in stream["items"]]
 
+    long_ctx_extra = ({"enable_chunked_prefill": True, "max_num_batched_tokens": 131072,
+                       "enforce_eager": True, "max_num_seqs": 1}
+                      if regime == "R2" else None)  # Qwen2.5-1M recipe; held constant across cache axis (R2 only)
     arm = VllmServingArm(args.model, cache_on=cache_on, tp_size=tp,
                         mem_fraction_static=args.mem_fraction_static,
                         context_length=args.context_length,
-                        random_seed=args.seed_for_engine)
+                        random_seed=args.seed_for_engine,
+                        extra=long_ctx_extra)
     try:
         warm = queries[0][:min(len(queries[0]), 256)] if queries else [1, 2, 3]
         arm.warmup(warm, rounds=2, max_new_tokens=args.max_new_tokens)
@@ -522,7 +526,7 @@ def run_orchestrator(args) -> None:
     gpus = args.gpus
     results_dir = REPO_ROOT / "experiments" / RESULTS_DIR_NAME / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
-    tmp_dir = results_dir / f"_tmp_{args.regime}"
+    tmp_dir = results_dir / f"_tmp_{args.regime}{'_smoke' if args.smoke else ''}"
     tmp_dir.mkdir(exist_ok=True)
 
     cells = build_cells(args)
@@ -562,8 +566,9 @@ def run_orchestrator(args) -> None:
            "cells": cell_results}
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    latest = results_dir / f"exp015_{args.regime}_raw_latest.json"
-    archive = results_dir / f"exp015_{args.regime}_raw_{ts}.json"
+    tag = "_smoke" if args.smoke else ""  # isolate smoke outputs from the grid (resume-collision guard)
+    latest = results_dir / f"exp015_{args.regime}{tag}_raw_latest.json"
+    archive = results_dir / f"exp015_{args.regime}{tag}_raw_{ts}.json"
     latest.write_text(json.dumps(raw, indent=2))
     archive.write_text(json.dumps(raw, indent=2))
     n_ok = len(raw["completed_cells"])
@@ -579,7 +584,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="EXP-015 energy/identification bench (S3).")
     ap.add_argument("--regime", choices=["R1", "R2"], required=True)
     ap.add_argument("--gpus", default="0,1,2,3", help="physical NVML indices available")
-    ap.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct")
+    ap.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct-1M")
     ap.add_argument("--seeds", default=",".join(map(str, DEFAULT_SEEDS)))
     ap.add_argument("--invocations", type=int, default=3)
     ap.add_argument("--r1-pairs", type=int, default=200, help="pairs/dataset/seed (R1)")
@@ -619,6 +624,8 @@ def _post_parse(args):
         args.r2_L = SMOKE_R2_L
     if args.regime == "R2" and args.context_length is None:
         args.context_length = max(args.r2_L) + TAIL_TOKENS + args.max_new_tokens + 64
+    if args.regime == "R1" and args.context_length is None:
+        args.context_length = 32768  # mirror Instruct-era derived max_model_len; bound KV on the 1M model
     args.seed_for_engine = 0
     return args
 

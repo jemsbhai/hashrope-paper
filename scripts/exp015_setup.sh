@@ -8,14 +8,18 @@
 #
 # Strategy: install the KNOWN-GOOD torch (2.6.0+cu124) FIRST, then vLLM 0.8.5.post1
 # (which requires torch==2.6.0 -- already satisfied, so pip will NOT replace it
-# with a CUDA-13 build). Do not run a bare `pip install vllm` (it would pull a
-# newer vLLM that drags torch to a cu130 build the node cannot use).
+# with a CUDA-13 build). transformers is PINNED to 4.51.3 (the version that fixes
+# the Qwen2 tokenizer all_special_tokens_extended error). Do not run a bare
+# `pip install vllm` (it would pull a newer vLLM that drags torch to a cu130 build
+# the node cannot use).
+#
+# NOTE: only needed for a FRESH venv. An existing working venv (torch 2.6.0+cu124,
+# vllm 0.8.5.post1, transformers 4.51.3) does NOT need a rebuild.
 #
 # Usage:
 #   bash scripts/exp015_setup.sh
 #   # optional pre-fetch to avoid first-run stalls:
-#   #   huggingface-cli download Qwen/Qwen2.5-0.5B-Instruct
-#   #   huggingface-cli download Qwen/Qwen2.5-7B-Instruct
+#   #   huggingface-cli download Qwen/Qwen2.5-7B-Instruct-1M
 
 set -euo pipefail
 
@@ -38,15 +42,16 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available(), tor
 echo "[setup] installing vllm==0.8.5.post1 (torch 2.6 line)"
 pip install vllm==0.8.5.post1
 
-# 3) measurement + data deps (none should move torch)
-echo "[setup] installing measurement + data deps"
-pip install nvidia-ml-py "hashrope==0.2.2" datasets numpy
+# 3) measurement + data deps; transformers pinned to the tokenizer-compatible
+#    version. Installed AFTER vllm so the pin wins (none of these move torch).
+echo "[setup] installing measurement + data deps (transformers pinned 4.51.3)"
+pip install nvidia-ml-py "hashrope==0.2.2" "transformers==4.51.3" datasets numpy
 
 echo "[setup] re-checking torch was NOT moved (must still be 2.6.0+cu124 True):"
 python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 
 echo "[setup] versions:"
-python - <<'PY'
+python - <<'PYEOF'
 import importlib
 for m in ["torch", "vllm", "pynvml", "hashrope", "transformers", "datasets", "numpy"]:
     try:
@@ -59,11 +64,10 @@ try:
     print(f"  cuda_available: {torch.cuda.is_available()} | n_gpus: {torch.cuda.device_count()}")
 except Exception as e:
     print(f"  combined import/cuda check failed: {e}")
-PY
+PYEOF
 
 echo ""
-echo "[setup] done. If torch shows 2.6.0+cu124 and vllm imports, smoke-test next:"
-echo "  source $VENV/bin/activate && cd <repo>"
-echo "  python scripts/exp015_bench.py --regime R1 --smoke --gpus 0 --model Qwen/Qwen2.5-0.5B-Instruct"
-echo "  python scripts/exp015_bench.py --regime R2 --smoke --gpus 0,1,2,3 --model Qwen/Qwen2.5-0.5B-Instruct"
-echo "[setup] the smoke runs MUST show real Track A (not 'skipped') and pass the preflight."
+echo "[setup] done. If torch shows 2.6.0+cu124, vllm imports, and transformers is"
+echo "[setup] 4.51.3, run the smoke gate next (real 1M model, one command):"
+echo "  sbatch scripts/exp015_smoke.sbatch    # R1-tiny + R2 @ L=1e6 binding constraint"
+echo "[setup] the smoke MUST show real Track A (not 'skipped') and pass the preflight."

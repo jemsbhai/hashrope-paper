@@ -1,32 +1,31 @@
 #!/bin/bash
-#SBATCH --job-name=exp015_R2
-#SBATCH --output=exp015_R2_%j.out
-#SBATCH --error=exp015_R2_%j.err
+#SBATCH --job-name=exp015_smoke
+#SBATCH --output=exp015_smoke_%j.out
+#SBATCH --error=exp015_smoke_%j.err
 #SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
-#SBATCH --time=24:00:00
+#SBATCH --time=04:00:00
 
-# EXP-015 / claim S3 -- Regime R2 (controlled long-shared-prefix synthetic; L
-# sweep {131072,262144,393216,524288,1000000} straddling the ~571k crossover).
-# Cells run SEQUENTIALLY with tensor parallelism tp=4 for KV capacity at long L;
-# energy summed over the TP group. Full relaunch per cell. Expected ~6-9 h; the
-# 24 h cap is the deciding headroom.
-# Model: Qwen/Qwen2.5-7B-Instruct-1M. Top L=1,000,000 -> max_model_len 1,001,096,
-# UNDER the model's 1,010,000 ceiling, so VLLM_ALLOW_LONG_MAX_MODEL_LEN is NOT set
-# (stay under the real ceiling rather than mask it). Long-context kwargs (chunked
-# prefill / enforce_eager / max_num_seqs=1) are applied by the bench, constant
-# across the cache axis. Pull-and-run: CUDA driver-link fix auto-applied below.
+# EXP-015 / claim S3 -- SMOKE / red-green gate on the REAL serving model
+# (Qwen/Qwen2.5-7B-Instruct-1M) BEFORE the confirmatory grid. Validates the new
+# long-context path end to end:
+#   - R1 smoke (single GPU): pipeline on the 1M model at ~2k prefixes.
+#   - R2 smoke (tp=4): the BINDING constraint -- L=1,000,000 (near the model's
+#     1,010,000 ceiling), chunked-prefill + enforce_eager + max_num_seqs=1,
+#     prefix cache OFF and ON, NVML energy window.
+# Both cells MUST print real Track A (energy_path, total_joules, cached_tokens;
+# never "skipped") and pass the fail-fast preflight. Green here gates the grid.
+# Smoke outputs are namespaced (*_smoke_raw_latest.json / _tmp_*_smoke) so they
+# CANNOT contaminate the confirmatory grid via the resume cache.
 #
-# Just: sbatch scripts/exp015_R2.sbatch
+# Just: sbatch scripts/exp015_smoke.sbatch   (then send the two smoke JSONs + logs)
 
 set -euo pipefail
 
 REPO="${EXP015_REPO:-${SLURM_SUBMIT_DIR:-$HOME/hashrope-paper}}"
 VENV="${EXP015_VENV:-$HOME/exp015-venv}"
 MODEL="${EXP015_MODEL:-Qwen/Qwen2.5-7B-Instruct-1M}"
-SEEDS="${EXP015_SEEDS:-42,43,44}"
-INVOCATIONS="${EXP015_INVOCATIONS:-3}"
 
 echo "[sbatch] node=$(hostname) job=${SLURM_JOB_ID:-na} $(date -u +%FT%TZ)"
 nvidia-smi --query-gpu=index,name,memory.total,driver_version --format=csv || true
@@ -58,12 +57,13 @@ fi
 export LIBRARY_PATH="$CUDALINK${LIBRARY_PATH:+:$LIBRARY_PATH}"
 export LD_LIBRARY_PATH="$CUDALINK${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-python scripts/exp015_bench.py \
-    --regime R2 \
-    --gpus 0,1,2,3 \
-    --model "$MODEL" \
-    --seeds "$SEEDS" \
-    --invocations "$INVOCATIONS"
+echo "[sbatch] === R1 smoke (1 GPU, 1M model) ==="
+python scripts/exp015_bench.py --regime R1 --smoke --gpus 0 --model "$MODEL"
 
-echo "[sbatch] R2 done $(date -u +%FT%TZ)"
-echo "[sbatch] results: $REPO/experiments/exp_015_energy/results/exp015_R2_raw_latest.json"
+echo "[sbatch] === R2 smoke (tp=4, L=1,000,000 -- binding constraint) ==="
+python scripts/exp015_bench.py --regime R2 --smoke --gpus 0,1,2,3 --model "$MODEL"
+
+echo "[sbatch] smoke done $(date -u +%FT%TZ)"
+echo "[sbatch] send these two + the .out/.err logs:"
+echo "  $REPO/experiments/exp_015_energy/results/exp015_R1_smoke_raw_latest.json"
+echo "  $REPO/experiments/exp_015_energy/results/exp015_R2_smoke_raw_latest.json"
