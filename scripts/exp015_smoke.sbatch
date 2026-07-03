@@ -57,6 +57,9 @@ fi
 export LIBRARY_PATH="$CUDALINK${LIBRARY_PATH:+:$LIBRARY_PATH}"
 export LD_LIBRARY_PATH="$CUDALINK${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
+echo "[sbatch] === cached-token field probe (tiny model, ~1 min) ==="
+python scripts/exp015_probe_cached.py Qwen/Qwen2.5-0.5B-Instruct || echo "[sbatch] probe failed (non-fatal); continuing"
+
 echo "[sbatch] === R1 smoke (1 GPU, 1M model) ==="
 python scripts/exp015_bench.py --regime R1 --smoke --gpus 0 --model "$MODEL"
 

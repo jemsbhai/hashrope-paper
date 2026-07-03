@@ -587,7 +587,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct-1M")
     ap.add_argument("--seeds", default=",".join(map(str, DEFAULT_SEEDS)))
     ap.add_argument("--invocations", type=int, default=3)
-    ap.add_argument("--r1-pairs", type=int, default=200, help="pairs/dataset/seed (R1)")
+    ap.add_argument("--r1-pairs", type=int, default=80, help="pairs/dataset/seed (R1); 80 keeps the cached footprint ~0.42x single-GPU KV capacity to avoid the prefix-cache eviction cliff")
     ap.add_argument("--r1-datasets", default=",".join(DEFAULT_R1_DATASETS))
     ap.add_argument("--r2-queries", type=int, default=8, help="divergent queries per L (R2)")
     ap.add_argument("--r2-L", default=None, help="comma-separated L sweep (R2)")
