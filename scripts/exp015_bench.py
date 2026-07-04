@@ -69,10 +69,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+# Best-effort: raise the vLLM MultiprocExecutor execute_model RPC timeout so long
+# dense prefills (high L) have room. Env added in vLLM PR #19544; a no-op on builds
+# predating it (e.g. 0.8.5.post1), where graceful Track-A degradation is the actual
+# guarantee. setdefault: never override an explicit env.
+os.environ.setdefault("VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS", "1200")
+
 # Pre-registered defaults (LOGBOOK EXP-015 IVs)
 DEFAULT_SEEDS = [42, 43, 44]
 DEFAULT_R2_L = [131_072, 262_144, 393_216, 524_288, 1_000_000]  # ~128k..1M (top=1e6 = Qwen2.5-1M usable ceiling), straddles ~571k
-SMOKE_R2_L = [1_000_000]  # smoke the binding constraint: 1M model at its near-ceiling L
+SMOKE_R2_L = [524_288, 1_000_000]  # 524288: Track A feasibility (attempt); 1000000: Track B win + Track A skip (ceiling)
 DEFAULT_R1_DATASETS = ["sharegpt_sample.jsonl", "lmsys_sample.jsonl"]
 TAIL_TOKENS = 1024
 TIMING_REPS = 5
@@ -262,6 +268,18 @@ def run_track_a(stream: dict, regime: str, cache_on: bool,
                 "engine": engine_name(), "engine_version": engine_version(),
                 "energy_path": energy_path(nvml_indices)}
 
+    if regime == "R2" and len(stream["cached_tokens"]) > args.track_a_max_L:
+        return {"skipped": True,
+                "reason": "engine_serve_infeasible_dense_attention",
+                "detail": ("L=%d > track_a_max_L=%d; vanilla vLLM dense-attention "
+                           "prefill at this length is not feasible within the vLLM "
+                           "worker RPC timeout. Track B identification runs at all L."
+                           % (len(stream["cached_tokens"]), args.track_a_max_L)),
+                "track_a_max_L": args.track_a_max_L,
+                "L": len(stream["cached_tokens"]),
+                "engine": engine_name(), "engine_version": engine_version(),
+                "energy_path": energy_path(nvml_indices)}
+
     if regime == "R2":
         cached_entries = [stream["cached_tokens"]]
         queries = stream["queries"]
@@ -317,8 +335,17 @@ def run_track_a(stream: dict, regime: str, cache_on: bool,
                 "ttft_ms": _stats(ttft_ms), "cached_tokens_per_req": cached_per_req,
                 "n_power_samples": er.n_samples, "engine_kwargs": arm.kwargs,
                 "engine": engine_name(), "engine_version": engine_version()}
+    except Exception as e:
+        return {"skipped": True, "reason": "engine_execution_failed",
+                "error": "%s: %s" % (type(e).__name__, e),
+                "engine_kwargs": getattr(arm, "kwargs", None),
+                "engine": engine_name(), "engine_version": engine_version(),
+                "energy_path": energy_path(nvml_indices)}
     finally:
-        arm.shutdown()
+        try:
+            arm.shutdown()
+        except Exception:
+            pass
 
 
 # ========================= worker (one cell) ============================= #
@@ -399,7 +426,7 @@ def _worker_cmd(args, cell: dict, gpus: list[int], tp: int, out: Path) -> list[i
     cmd = [sys.executable, os.path.abspath(__file__), "--worker-mode",
            "--cell-json", json.dumps(c), "--out", str(out),
            "--regime", args.regime, "--model", args.model,
-           "--r1-pairs", str(args.r1_pairs), "--r2-queries", str(args.r2_queries),
+           "--r1-pairs", str(args.r1_pairs), "--r2-queries", str(args.r2_queries), "--track-a-max-L", str(args.track_a_max_L),
            "--max-new-tokens", str(args.max_new_tokens),
            "--mem-fraction-static", str(args.mem_fraction_static),
            "--vocab", str(args.vocab),
@@ -588,6 +615,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--seeds", default=",".join(map(str, DEFAULT_SEEDS)))
     ap.add_argument("--invocations", type=int, default=3)
     ap.add_argument("--r1-pairs", type=int, default=80, help="pairs/dataset/seed (R1); 80 keeps the cached footprint ~0.42x single-GPU KV capacity to avoid the prefix-cache eviction cliff")
+    ap.add_argument("--track-a-max-L", type=int, default=524288, help="R2 Track A (engine energy) is SKIPPED above this L; vanilla vLLM dense-attention prefill beyond it is infeasible within the worker RPC timeout. Track B identification still runs at ALL L (incl 1M) on CPU.")
     ap.add_argument("--r1-datasets", default=",".join(DEFAULT_R1_DATASETS))
     ap.add_argument("--r2-queries", type=int, default=8, help="divergent queries per L (R2)")
     ap.add_argument("--r2-L", default=None, help="comma-separated L sweep (R2)")
