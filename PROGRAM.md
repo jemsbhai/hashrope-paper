@@ -63,7 +63,7 @@ Legend — **Mode:** Sol = solidify, Add = new, Abl = ablation, Exp = expand.
 | 012 | C2 | Hash security: keyed / verify-on-match hashing + collision & adversarial-forgeability analysis | Add | local; **touches lib** | planned | Best-paper differentiator. Current poly hash is forgeable with public params. |
 | 013 | C3 | Define + test HybridContext's byte/char index contract (no UTF-8 bisection) | Add | local-CPU | planned | **Pairs with EXP-003** (the UTF-8 round-trip fix is the same code path). |
 | 014 | T5 | Lazy vs eager construction cost (Theorem 44), Rust 0.3.0, on real workloads | Add | local-Rust | planned | Isolate O(t·log t) lazy vs O(k·c_F·t) eager construction. |
-| 015 | S3 | **HEADLINE ENERGY:** real serving stack (vLLM/SGLang) + 7–8B model — does hashrope's O(log² N) prefix identification → KV reuse → lower TTFT / higher throughput / lower **energy**, **isolated** from the framework's built-in prefix caching | Add | **GPU-Colab (A100/H100)** | planned | **DESIGN CONFER BEFORE ANY CELLS.** Interactive, one cell at a time. Isolation methodology is the whole ballgame (the old suite's failure was unfalsifiability). |
+| 015 | S3 | **GPU-SIDE VALIDATION + ATTRIBUTION (as run):** real serving stack (vLLM 0.8.5.post1) + Qwen2.5-7B-Instruct-1M -- Track A engine prefix-cache {OFF,ON} GPU energy/TTFT; Track B CPU identification (hashrope vs vendored SGLang radix vs numpy flat), decoupled from the GPU window; R2 shared-prefix sweep to L=1e6 | Add | 4x A100-SXM4-40GB (ai-panther, SLURM) | **DONE (confirmatory)** | **S3 SUPPORTED (2026-07-18).** Gate 0/1800 + 105/105 negative controls; live-stack crossover L*' bracketed (524288, 1e6] with EXP-017's ~571k prediction inside; hashrope 1.20x faster than radix at 1M (9/9, p=0.002) where dense serving is infeasible; engine caching 22.65x (R1) / 69.6x-277.6x (R2) attributed to vLLM, not hashrope; (ii) neutrality by construction; F6 not triggered. LOGBOOK 2026-07-18. |
 | 016 | S6 | **SUPPORTING ENERGY:** CPU package (+DRAM if exposed) joules per mutation via Intel RAPL, read with LibreHardwareMonitor — hashrope O(log N) edit vs O(N) contiguous copy | Add | local-CPU | planned | Grounds the memory-bus motivation. **Reuses the EXP-003 workload.** Fold in the user's prior LibreHardwareMonitor settling/warmup protocol. LibreHardwareMonitor (admin/MSR) — confirm install at kickoff; WSL2 cannot read host RAPL. |
 | 017 | B1 | **COMPETITIVE Leg 3:** prefix-identification — hashrope LCP vs SGLang RadixCache v0.1.17 (vendored byte-identical) + numpy flat C-speed floor, on controlled-L corpus sweep (1k–2M tokens) + ShareGPT/LMSYS real pairs (co-primary) + one-vs-many K-sweep | Add | local-CPU | **DONE (confirmatory)** | B1 SUPPORTED. Crossover L*≈571k tokens; 4.63× at L=2M (9/9 paired). Grid extended from 1M to 2M after initial run revealed crossover higher than pre-registered estimate (128k–256k). Criterion (iv) checkpoint revised from (512k,1M) to (2M). Honest negatives: radix wins real pairs and K-sweep. |
 | 018 | B1 (ext) | **COMPETITIVE Leg 3+1:** serving-loop replay — per-request radix match+insert vs hashrope append+LCP on ShareGPT/LMSYS conversation streams | Add | local-CPU | planned | Framing C; shares the EXP-017 harness. Bundles incremental edit (Leg 1) with identification (Leg 3) — the unification systems number. Design confer at kickoff. |
@@ -72,18 +72,21 @@ Legend — **Mode:** Sol = solidify, Add = new, Abl = ablation, Exp = expand.
 
 ## The energy narrative (two committed experiments, fixed hierarchy)
 
-- **Headline = EXP-015 (S3), datacenter GPU energy, on Colab A100/H100.** The most
-  impactful claim: hashrope *identifies* reusable prefixes in O(log² N) →
-  the serving stack skips redundant forward passes → measurable end-to-end
-  TTFT / throughput / **energy (J)** win, with hashrope's contribution **isolated
-  from the framework's own prefix caching**. This replaces the prior draft's
-  faked 62.7% "thermodynamics" figure (which never invoked hashrope; see
-  `CLAIMS.md` S3 for the code+data provenance).
-- **Supporting = EXP-016 (S6), CPU / memory-bus energy, on the laptop.** A
-  **relative, paired** joules-per-mutation result (O(log N) edit vs O(N) copy)
-  that turns the opening memory-bus physics argument (DRAM ≈ 15 pJ/bit ≫
-  ALU ≈ 0.1 pJ/bit) from rhetoric into a measured number. **Not** a
-  datacenter-energy claim — that is EXP-015's job alone. CPU-local, not Colab.
+- **EXP-015 (S3), GPU-side validation + attribution -- COMPLETE, S3 SUPPORTED
+  (2026-07-18).** Per the pre-registered hierarchy (LOGBOOK, recorded before
+  data): the energy-REDUCTION headline is EXP-016 (host/RAPL); performance
+  headlines are the four competitive legs; EXP-015 delivers correctness +
+  energy-transparency on a real vLLM stack plus the honest caching-energy
+  attribution (22.65x R1; 69.6x-277.6x R2 -- the ENGINE's effect, not
+  hashrope's) that corrects the prior draft's faked 62.7% figure (which never
+  invoked hashrope; see CLAIMS.md S3 for the code+data provenance).
+- **Energy-reduction headline = EXP-016 (S6), CPU / memory-bus energy, on the
+  laptop.** A **relative, paired** joules-per-mutation result (O(log N) edit
+  vs O(N) copy) that turns the opening memory-bus physics argument (DRAM ~15
+  pJ/bit >> ALU ~0.1 pJ/bit) from rhetoric into a measured number. Per the
+  pre-registered hierarchy this is the energy-reduction headline; GPU-side
+  energy magnitudes live in EXP-015 as engine-attributed measurements, not
+  hashrope reductions. CPU-local, not Colab.
 
 ## Sequencing notes
 
@@ -93,8 +96,11 @@ Legend — **Mode:** Sol = solidify, Add = new, Abl = ablation, Exp = expand.
 - **EXP-003 ↔ EXP-013** are coupled (shared UTF-8 code path) — do them adjacent.
 - **EXP-003 → EXP-016**: EXP-003 produces the mutation workload EXP-016 reuses, so
   EXP-003 should precede EXP-016.
-- **EXP-015 is the long pole and highest-risk.** Regardless of run order, do its
-  **design confer early** so the isolation methodology is settled before cells.
+- **EXP-015 is COMPLETE (2026-07-18): S3 SUPPORTED.** The long-pole risk was
+  resolved through dated LOGBOOK deviations (engine SGLang -> vLLM; model ->
+  Qwen2.5-7B-Instruct-1M; R2 Track A/B decouple at the dense-attention
+  serving wall; commits 5c042b1, d91acb8), promotion criteria unchanged
+  throughout.
 - **Recommended first step: EXP-002** — local, fast, low-risk, converts a prior
   weakness into a ~500× strength, and re-establishes the
   plan→red→run→record→commit cadence. (Alternative substance-first start: EXP-005.)
