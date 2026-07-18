@@ -1,0 +1,2319 @@
+{
+ "experiment": "EXP-015",
+ "claim": "S3",
+ "generated_utc": "2026-07-18T06:58:24.238617+00:00",
+ "inputs": {
+  "r1": {
+   "path": "experiments/exp_015_energy/results/exp015_R1_raw_latest.json",
+   "sha256": "15826e5710087b1ea0c42b23b88fc3ecb9ba0d79f6e73d880fcbf67a0224c3e8"
+  },
+  "r2": {
+   "path": "experiments/exp_015_energy/results/exp015_R2_raw_latest.json",
+   "sha256": "1fdedaf82ee45aef37c8df7e3aab633eafb596a28d551c903efa56a292c6eafc"
+  },
+  "negctl_r1": {
+   "path": "experiments/exp_015_energy/results/exp015_negative_control_R1.json",
+   "sha256": "e517fdce30054028d7d521e49d8053cfc2fb658a42fe1b9e0df50d71a8711a76"
+  },
+  "negctl_r2": {
+   "path": "experiments/exp_015_energy/results/exp015_negative_control_R2.json",
+   "sha256": "5d9218b621c9b385a2340cc6d7aad517617c0706928a6aafa543a763d203d40f"
+  }
+ },
+ "conventions": {
+  "std": "sample std (ddof=1) across (seed, invocation) cells",
+  "sign_test": "exact one-sided binomial, ties dropped",
+  "band95": "t-based, df = n-1",
+  "j_per_token": "total_joules / total completion tokens (prefill-dominated; ratio/delta meaningful)"
+ },
+ "provenance": {
+  "r1": {
+   "model": "Qwen/Qwen2.5-7B-Instruct-1M",
+   "git_sha": "d91acb88227ee04c68e72f81b787a8e72ffb09f4",
+   "git_dirty": true,
+   "engine_version": "0.8.5.post1",
+   "seeds": [
+    42,
+    43,
+    44
+   ],
+   "invocations": 3,
+   "corpus_sha16": {}
+  },
+  "r2": {
+   "model": "Qwen/Qwen2.5-7B-Instruct-1M",
+   "git_sha": "d91acb88227ee04c68e72f81b787a8e72ffb09f4",
+   "git_dirty": true,
+   "engine_version": "0.8.5.post1",
+   "seeds": [
+    42,
+    43,
+    44
+   ],
+   "invocations": 3,
+   "corpus_sha16": {
+    "42": "fda6a43a3fe34184",
+    "43": "c22f23b3d75f580b",
+    "44": "3463a23d36e74e7a"
+   }
+  }
+ },
+ "gate_total": {
+  "checks": 1800,
+  "mismatches": 0,
+  "r1_checks": 1440,
+  "r1_mismatches": 0,
+  "r2_checks": 360,
+  "r2_mismatches": 0
+ },
+ "r1": {
+  "track_a": {
+   "L": null,
+   "n_pairs": 9,
+   "pairs": [
+    {
+     "seed": 42,
+     "inv": 0,
+     "j_per_token_off": 2.51168359375,
+     "j_per_token_on": 0.10716171875,
+     "total_joules_off": 3214.955,
+     "total_joules_on": 137.167,
+     "ratio_j": 23.438254099017986,
+     "delta_j_per_token": -2.404521875,
+     "ttft_ms_off": 56.89402401330881,
+     "ttft_ms_on": 21.433723988593556,
+     "delta_ttft_ms": -35.46030002471525,
+     "thr_tok_s_off": 158.21452846115452,
+     "thr_tok_s_on": 3077.0894756819016,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 42,
+     "inv": 1,
+     "j_per_token_off": 2.5302726562499998,
+     "j_per_token_on": 0.10627890625,
+     "total_joules_off": 3238.749,
+     "total_joules_on": 136.037,
+     "ratio_j": 23.80785374567213,
+     "delta_j_per_token": -2.4239937499999997,
+     "ttft_ms_off": 57.12952099274844,
+     "ttft_ms_on": 21.611767313152086,
+     "delta_ttft_ms": -35.51775367959635,
+     "thr_tok_s_off": 156.64901391616817,
+     "thr_tok_s_on": 2913.322192991872,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 42,
+     "inv": 2,
+     "j_per_token_off": 2.44658515625,
+     "j_per_token_on": 0.10372734374999999,
+     "total_joules_off": 3131.629,
+     "total_joules_on": 132.771,
+     "ratio_j": 23.586694383562676,
+     "delta_j_per_token": -2.3428578124999997,
+     "ttft_ms_off": 56.02597171236994,
+     "ttft_ms_on": 21.589138194394764,
+     "delta_ttft_ms": -34.436833517975174,
+     "thr_tok_s_off": 160.47828470536786,
+     "thr_tok_s_on": 2884.0901927929717,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 43,
+     "inv": 0,
+     "j_per_token_off": 2.3829388235294116,
+     "j_per_token_on": 0.10878823529411766,
+     "total_joules_off": 3038.247,
+     "total_joules_on": 138.705,
+     "ratio_j": 21.90437979885368,
+     "delta_j_per_token": -2.274150588235294,
+     "ttft_ms_off": 54.55575861997204,
+     "ttft_ms_on": 20.491227350430563,
+     "delta_ttft_ms": -34.064531269541476,
+     "thr_tok_s_off": 165.20526069304017,
+     "thr_tok_s_on": 3196.4450748036065,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 43,
+     "inv": 1,
+     "j_per_token_off": 2.39149568627451,
+     "j_per_token_on": 0.1129121568627451,
+     "total_joules_off": 3049.157,
+     "total_joules_on": 143.963,
+     "ratio_j": 21.18014350909609,
+     "delta_j_per_token": -2.278583529411765,
+     "ttft_ms_off": 54.64141360571375,
+     "ttft_ms_on": 20.611960867245216,
+     "delta_ttft_ms": -34.029452738468535,
+     "thr_tok_s_off": 165.42014154749634,
+     "thr_tok_s_on": 3149.321336205729,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 43,
+     "inv": 2,
+     "j_per_token_off": 2.388786666666667,
+     "j_per_token_on": 0.10621960784313726,
+     "total_joules_off": 3045.703,
+     "total_joules_on": 135.43,
+     "ratio_j": 22.489130916340546,
+     "delta_j_per_token": -2.2825670588235294,
+     "ttft_ms_off": 54.54906108934665,
+     "ttft_ms_on": 20.646863176079933,
+     "delta_ttft_ms": -33.90219791326672,
+     "thr_tok_s_off": 164.1281538374994,
+     "thr_tok_s_on": 3184.889250394815,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 44,
+     "inv": 0,
+     "j_per_token_off": 2.5699225352112673,
+     "j_per_token_on": 0.10437089201877935,
+     "total_joules_off": 3284.361,
+     "total_joules_on": 133.386,
+     "ratio_j": 24.622981422338174,
+     "delta_j_per_token": -2.465551643192488,
+     "ttft_ms_off": 58.20470333856065,
+     "ttft_ms_on": 20.921330686542206,
+     "delta_ttft_ms": -37.28337265201844,
+     "thr_tok_s_off": 153.02223059983908,
+     "thr_tok_s_on": 2903.105011969782,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 44,
+     "inv": 1,
+     "j_per_token_off": 2.520579812206573,
+     "j_per_token_on": 0.13468701095461658,
+     "total_joules_off": 3221.301,
+     "total_joules_on": 172.13,
+     "ratio_j": 18.714349619473655,
+     "delta_j_per_token": -2.385892801251956,
+     "ttft_ms_off": 56.76232117257314,
+     "ttft_ms_on": 21.193514864717145,
+     "delta_ttft_ms": -35.56880630785599,
+     "thr_tok_s_off": 156.6040245844517,
+     "thr_tok_s_on": 2958.2694364208296,
+     "cached_tokens_on": 0
+    },
+    {
+     "seed": 44,
+     "inv": 2,
+     "j_per_token_off": 2.5464053208137716,
+     "j_per_token_on": 0.10554225352112677,
+     "total_joules_off": 3254.306,
+     "total_joules_on": 134.883,
+     "ratio_j": 24.126880333325918,
+     "delta_j_per_token": -2.440863067292645,
+     "ttft_ms_off": 57.313455115945544,
+     "ttft_ms_on": 21.030205182614736,
+     "delta_ttft_ms": -36.28324993333081,
+     "thr_tok_s_off": 154.90657723168184,
+     "thr_tok_s_on": 2967.334873997949,
+     "cached_tokens_on": 0
+    }
+   ],
+   "ratio_j": {
+    "mean": 22.652296425297873,
+    "std": 1.8420369264397916,
+    "min": 18.714349619473655,
+    "max": 24.622981422338174,
+    "n": 9
+   },
+   "ratio_j_per_seed": {
+    "42": {
+     "mean": 23.610934076084263,
+     "std": 0.18598829727128785,
+     "min": 23.438254099017986,
+     "max": 23.80785374567213,
+     "n": 3
+    },
+    "43": {
+     "mean": 21.85788474143011,
+     "std": 0.6557311574530803,
+     "min": 21.18014350909609,
+     "max": 22.489130916340546,
+     "n": 3
+    },
+    "44": {
+     "mean": 22.48807045837925,
+     "std": 3.277538069973031,
+     "min": 18.714349619473655,
+     "max": 24.622981422338174,
+     "n": 3
+    }
+   },
+   "j_per_token_off": {
+    "mean": 2.476518916772467,
+    "std": 0.07437648169265616,
+    "min": 2.3829388235294116,
+    "max": 2.5699225352112673,
+    "n": 9
+   },
+   "j_per_token_on": {
+    "mean": 0.1099653472493914,
+    "std": 0.009659742844828767,
+    "min": 0.10372734374999999,
+    "max": 0.13468701095461658,
+    "n": 9
+   },
+   "j_per_token_on_band95": {
+    "lo": 0.08768998024921626,
+    "hi": 0.13224071424956654,
+    "half_width": 0.022275367000175135
+   },
+   "total_joules_off": {
+    "mean": 3164.2675555555556,
+    "std": 98.83908818012118,
+    "min": 3038.247,
+    "max": 3284.361,
+    "n": 9
+   },
+   "total_joules_on": {
+    "mean": 140.4968888888889,
+    "std": 12.32020946904358,
+    "min": 132.771,
+    "max": 172.13,
+    "n": 9
+   },
+   "delta_j_per_token": {
+    "mean": -2.3665535695230755,
+    "std": 0.07443936649660872,
+    "min": -2.465551643192488,
+    "max": -2.274150588235294,
+    "n": 9
+   },
+   "sign_delta_j": {
+    "n": 9,
+    "wins": 9,
+    "losses": 0,
+    "ties": 0,
+    "p_one_sided": 0.001953125
+   },
+   "ttft_ms_off": {
+    "mean": 56.23069218450433,
+    "std": 1.360175989676667,
+    "min": 54.54906108934665,
+    "max": 58.20470333856065,
+    "n": 9
+   },
+   "ttft_ms_on": {
+    "mean": 21.0588590693078,
+    "std": 0.4267550316296914,
+    "min": 20.491227350430563,
+    "max": 21.611767313152086,
+    "n": 9
+   },
+   "delta_ttft_ms": {
+    "mean": -35.17183311519653,
+    "std": 1.1585366160627615,
+    "min": -37.28337265201844,
+    "max": -33.90219791326672,
+    "n": 9
+   },
+   "sign_delta_ttft": {
+    "n": 9,
+    "wins": 9,
+    "losses": 0,
+    "ties": 0,
+    "p_one_sided": 0.001953125
+   },
+   "thr_tok_s_off": {
+    "mean": 159.40313506407767,
+    "std": 4.624915412050355,
+    "min": 153.02223059983908,
+    "max": 165.42014154749634,
+    "n": 9
+   },
+   "thr_tok_s_on": {
+    "mean": 3025.9852050288287,
+    "std": 126.53185757105977,
+    "min": 2884.0901927929717,
+    "max": 3196.4450748036065,
+    "n": 9
+   },
+   "n_ttft_regressions": 0,
+   "n_thr_regressions": 0,
+   "cached_token_counter_available": false,
+   "cached_tokens_on_values": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "track_b": {
+   "L": null,
+   "n_cells": 9,
+   "arms": {
+    "flat": {
+     "lat_ms_cellmeans": [
+      0.005036107904743403,
+      0.00482570321764797,
+      0.004961954255122691,
+      0.004754720430355519,
+      0.00477233697893098,
+      0.004863970389124006,
+      0.004797386645805091,
+      0.004737783456221223,
+      0.0047560446546413004
+     ],
+     "lat_ms": {
+      "mean": 0.004834000881399131,
+      "std": 0.00010304715703315322,
+      "min": 0.004737783456221223,
+      "max": 0.005036107904743403,
+      "n": 9
+     }
+    },
+    "hashrope": {
+     "lat_ms_cellmeans": [
+      16.61376407573698,
+      16.58189326117281,
+      16.610295123246033,
+      17.081924974627327,
+      17.097940797975753,
+      17.44144589174539,
+      19.08859636168927,
+      18.457154756470118,
+      18.190021546615753
+     ],
+     "lat_ms": {
+      "mean": 17.46255964325327,
+      "std": 0.9126248625256778,
+      "min": 16.58189326117281,
+      "max": 19.08859636168927,
+      "n": 9
+     }
+    },
+    "radix": {
+     "lat_ms_cellmeans": [
+      0.04029262054245919,
+      0.03848955238936469,
+      0.03806379245361313,
+      0.035265155020169914,
+      0.035791688424069434,
+      0.03526985383359715,
+      0.03957514127250761,
+      0.037373848317656666,
+      0.03714459016919136
+     ],
+     "lat_ms": {
+      "mean": 0.037474026935847685,
+      "std": 0.0018174359720210846,
+      "min": 0.035265155020169914,
+      "max": 0.04029262054245919,
+      "n": 9
+     }
+    }
+   },
+   "oracle_lcp": {
+    "mean": 642.3,
+    "std": 18.734305149994885,
+    "min": 624.25625,
+    "max": 666.28125,
+    "n": 9
+   },
+   "gate_checks": 1440,
+   "gate_mismatches": 0,
+   "radix_available": true,
+   "delta_radix_minus_hashrope_ms": {
+    "mean": -17.42508561631742,
+    "std": 0.9125186618761574,
+    "min": -19.049021220416762,
+    "max": -16.543403708783444,
+    "n": 9
+   },
+   "sign_hashrope_beats_radix": {
+    "n": 9,
+    "wins": 0,
+    "losses": 9,
+    "ties": 0,
+    "p_one_sided": 1.0
+   },
+   "hashrope_over_radix_ratio": 465.99100953702344
+  }
+ },
+ "r2": {
+  "track_a_by_L": {
+   "131072": {
+    "L": 131072,
+    "n_pairs": 9,
+    "pairs": [
+     {
+      "seed": 42,
+      "inv": 0,
+      "j_per_token_off": 1563.1811562500002,
+      "j_per_token_on": 22.676765625,
+      "total_joules_off": 100043.59400000001,
+      "total_joules_on": 1451.313,
+      "ratio_j": 68.93316190236014,
+      "delta_j_per_token": -1540.5043906250003,
+      "ttft_ms_off": 7740.7801233639475,
+      "ttft_ms_on": 226.20427643414587,
+      "delta_ttft_ms": -7514.575846929802,
+      "thr_tok_s_off": 0.9965364473762188,
+      "thr_tok_s_on": 27.751860923896785,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 1,
+      "j_per_token_off": 1552.1481406249998,
+      "j_per_token_on": 22.58278125,
+      "total_joules_off": 99337.48099999999,
+      "total_joules_on": 1445.298,
+      "ratio_j": 68.73148720886626,
+      "delta_j_per_token": -1529.5653593749998,
+      "ttft_ms_off": 7749.697493214626,
+      "ttft_ms_on": 222.70345507422462,
+      "delta_ttft_ms": -7526.994038140401,
+      "thr_tok_s_off": 1.0051385344660067,
+      "thr_tok_s_on": 28.399642971864097,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 2,
+      "j_per_token_off": 1553.3567343749999,
+      "j_per_token_on": 22.698656250000003,
+      "total_joules_off": 99414.83099999999,
+      "total_joules_on": 1452.7140000000002,
+      "ratio_j": 68.43386310037624,
+      "delta_j_per_token": -1530.6580781249997,
+      "ttft_ms_off": 7759.5969112589955,
+      "ttft_ms_on": 224.62765779346228,
+      "delta_ttft_ms": -7534.969253465533,
+      "thr_tok_s_off": 1.0034940191981463,
+      "thr_tok_s_on": 28.448668818744398,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 0,
+      "j_per_token_off": 1553.67825,
+      "j_per_token_on": 21.93059375,
+      "total_joules_off": 99435.408,
+      "total_joules_on": 1403.558,
+      "ratio_j": 70.84524330309114,
+      "delta_j_per_token": -1531.7476562499999,
+      "ttft_ms_off": 7749.281933240127,
+      "ttft_ms_on": 223.59927784418687,
+      "delta_ttft_ms": -7525.68265539594,
+      "thr_tok_s_off": 1.0038006306021445,
+      "thr_tok_s_on": 29.11970401992189,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 1,
+      "j_per_token_off": 1552.966671875,
+      "j_per_token_on": 22.265203125,
+      "total_joules_off": 99389.867,
+      "total_joules_on": 1424.973,
+      "ratio_j": 69.74859664007668,
+      "delta_j_per_token": -1530.70146875,
+      "ttft_ms_off": 7757.124094932806,
+      "ttft_ms_on": 226.21224826434627,
+      "delta_ttft_ms": -7530.9118466684595,
+      "thr_tok_s_off": 1.0041436335503042,
+      "thr_tok_s_on": 28.239098344366287,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 2,
+      "j_per_token_off": 1555.05421875,
+      "j_per_token_on": 22.464453125,
+      "total_joules_off": 99523.47,
+      "total_joules_on": 1437.725,
+      "ratio_j": 69.22288337477613,
+      "delta_j_per_token": -1532.589765625,
+      "ttft_ms_off": 7762.151158240158,
+      "ttft_ms_on": 220.39337002206594,
+      "delta_ttft_ms": -7541.757788218092,
+      "thr_tok_s_off": 1.002569027787213,
+      "thr_tok_s_on": 28.49665217136911,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 0,
+      "j_per_token_off": 1555.48059375,
+      "j_per_token_on": 22.240640624999997,
+      "total_joules_off": 99550.758,
+      "total_joules_on": 1423.4009999999998,
+      "ratio_j": 69.93865959065647,
+      "delta_j_per_token": -1533.239953125,
+      "ttft_ms_off": 7762.15515343938,
+      "ttft_ms_on": 227.74985618889332,
+      "delta_ttft_ms": -7534.405297250487,
+      "thr_tok_s_off": 1.002777539886581,
+      "thr_tok_s_on": 28.077396736699125,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 1,
+      "j_per_token_off": 1554.47865625,
+      "j_per_token_on": 22.01946875,
+      "total_joules_off": 99486.634,
+      "total_joules_on": 1409.246,
+      "ratio_j": 70.59564760162526,
+      "delta_j_per_token": -1532.4591875,
+      "ttft_ms_off": 7764.212393376511,
+      "ttft_ms_on": 228.612118458841,
+      "delta_ttft_ms": -7535.60027491767,
+      "thr_tok_s_off": 1.0026562480610421,
+      "thr_tok_s_on": 28.56546504884652,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 2,
+      "j_per_token_off": 1555.323203125,
+      "j_per_token_on": 22.161734374999998,
+      "total_joules_off": 99540.685,
+      "total_joules_on": 1418.3509999999999,
+      "ratio_j": 70.18057236889882,
+      "delta_j_per_token": -1533.16146875,
+      "ttft_ms_off": 7769.562938483432,
+      "ttft_ms_on": 223.0781886028126,
+      "delta_ttft_ms": -7546.484749880619,
+      "thr_tok_s_off": 1.0026552182966058,
+      "thr_tok_s_on": 28.841524983373063,
+      "cached_tokens_on": 0
+     }
+    ],
+    "ratio_j": {
+     "mean": 69.62556834341413,
+     "std": 0.8449095113292218,
+     "min": 68.43386310037624,
+     "max": 70.84524330309114,
+     "n": 9
+    },
+    "ratio_j_per_seed": {
+     "42": {
+      "mean": 68.69950407053422,
+      "std": 0.25118123789171387,
+      "min": 68.43386310037624,
+      "max": 68.93316190236014,
+      "n": 3
+     },
+     "43": {
+      "mean": 69.938907772648,
+      "std": 0.8277539970522623,
+      "min": 69.22288337477613,
+      "max": 70.84524330309114,
+      "n": 3
+     },
+     "44": {
+      "mean": 70.2382931870602,
+      "std": 0.33227561041414705,
+      "min": 69.93865959065647,
+      "max": 70.59564760162526,
+      "n": 3
+     }
+    },
+    "j_per_token_off": {
+     "mean": 1555.0741805555556,
+     "std": 3.244357265316175,
+     "min": 1552.1481406249998,
+     "max": 1563.1811562500002,
+     "n": 9
+    },
+    "j_per_token_on": {
+     "mean": 22.33781076388889,
+     "std": 0.2815210523786819,
+     "min": 21.93059375,
+     "max": 22.698656250000003,
+     "n": 9
+    },
+    "j_per_token_on_band95": {
+     "lo": 21.68862321710365,
+     "hi": 22.986998310674128,
+     "half_width": 0.6491875467852405
+    },
+    "total_joules_off": {
+     "mean": 99524.74755555556,
+     "std": 207.6388649802352,
+     "min": 99337.48099999999,
+     "max": 100043.59400000001,
+     "n": 9
+    },
+    "total_joules_on": {
+     "mean": 1429.619888888889,
+     "std": 18.017347352235642,
+     "min": 1403.558,
+     "max": 1452.7140000000002,
+     "n": 9
+    },
+    "delta_j_per_token": {
+     "mean": -1532.7363697916667,
+     "std": 3.169537738393167,
+     "min": -1540.5043906250003,
+     "max": -1529.5653593749998,
+     "n": 9
+    },
+    "sign_delta_j": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "ttft_ms_off": {
+     "mean": 7757.173577727775,
+     "std": 8.982092060699275,
+     "min": 7740.7801233639475,
+     "max": 7769.562938483432,
+     "n": 9
+    },
+    "ttft_ms_on": {
+     "mean": 224.7978276314421,
+     "std": 2.632732707608425,
+     "min": 220.39337002206594,
+     "max": 228.612118458841,
+     "n": 9
+    },
+    "delta_ttft_ms": {
+     "mean": -7532.375750096334,
+     "std": 9.361285316134609,
+     "min": -7546.484749880619,
+     "max": -7514.575846929802,
+     "n": 9
+    },
+    "sign_delta_ttft": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "thr_tok_s_off": {
+     "mean": 1.0026412554693627,
+     "std": 0.0024458585106697304,
+     "min": 0.9965364473762188,
+     "max": 1.0051385344660067,
+     "n": 9
+    },
+    "thr_tok_s_on": {
+     "mean": 28.437779335453474,
+     "std": 0.40143621221274656,
+     "min": 27.751860923896785,
+     "max": 29.11970401992189,
+     "n": 9
+    },
+    "n_ttft_regressions": 0,
+    "n_thr_regressions": 0,
+    "cached_token_counter_available": false,
+    "cached_tokens_on_values": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "262144": {
+    "L": 262144,
+    "n_pairs": 9,
+    "pairs": [
+     {
+      "seed": 42,
+      "inv": 0,
+      "j_per_token_off": 5259.36365625,
+      "j_per_token_on": 34.386015625,
+      "total_joules_off": 336599.274,
+      "total_joules_on": 2200.705,
+      "ratio_j": 152.950656266969,
+      "delta_j_per_token": -5224.977640624999,
+      "ttft_ms_off": 26631.28200749634,
+      "ttft_ms_on": 468.7493994133547,
+      "delta_ttft_ms": -26162.532608082984,
+      "thr_tok_s_off": 0.298523855618864,
+      "thr_tok_s_on": 18.680660233981808,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 1,
+      "j_per_token_off": 5261.799609375,
+      "j_per_token_on": 35.338046875,
+      "total_joules_off": 336755.175,
+      "total_joules_on": 2261.635,
+      "ratio_j": 148.89899342732136,
+      "delta_j_per_token": -5226.4615625,
+      "ttft_ms_off": 26605.966646631714,
+      "ttft_ms_on": 467.7570701460354,
+      "delta_ttft_ms": -26138.20957648568,
+      "thr_tok_s_off": 0.2983756896193218,
+      "thr_tok_s_on": 18.199633223563563,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 2,
+      "j_per_token_off": 5261.265375,
+      "j_per_token_on": 34.754437499999995,
+      "total_joules_off": 336720.984,
+      "total_joules_on": 2224.2839999999997,
+      "ratio_j": 151.38398873525145,
+      "delta_j_per_token": -5226.5109375,
+      "ttft_ms_off": 26602.054819464684,
+      "ttft_ms_on": 462.9992640693672,
+      "delta_ttft_ms": -26139.055555395316,
+      "thr_tok_s_off": 0.2985029660596207,
+      "thr_tok_s_on": 18.53575866780109,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 0,
+      "j_per_token_off": 5260.101281250001,
+      "j_per_token_on": 34.962078125000005,
+      "total_joules_off": 336646.4820000001,
+      "total_joules_on": 2237.5730000000003,
+      "ratio_j": 150.45161967900043,
+      "delta_j_per_token": -5225.139203125002,
+      "ttft_ms_off": 26607.02161124209,
+      "ttft_ms_on": 467.55970135563985,
+      "delta_ttft_ms": -26139.46190988645,
+      "thr_tok_s_off": 0.2985126529390752,
+      "thr_tok_s_on": 18.2719742690525,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 1,
+      "j_per_token_off": 5264.57609375,
+      "j_per_token_on": 35.700640625,
+      "total_joules_off": 336932.87,
+      "total_joules_on": 2284.841,
+      "ratio_j": 147.46447126955442,
+      "delta_j_per_token": -5228.875453125,
+      "ttft_ms_off": 26601.466568012256,
+      "ttft_ms_on": 464.62569618597627,
+      "delta_ttft_ms": -26136.84087182628,
+      "thr_tok_s_off": 0.2982503542372932,
+      "thr_tok_s_on": 18.190516720978408,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 2,
+      "j_per_token_off": 5253.114406250001,
+      "j_per_token_on": 34.99117187499999,
+      "total_joules_off": 336199.32200000004,
+      "total_joules_on": 2239.4349999999995,
+      "ratio_j": 150.12684985275308,
+      "delta_j_per_token": -5218.123234375001,
+      "ttft_ms_off": 26636.323271028232,
+      "ttft_ms_on": 463.5053984238766,
+      "delta_ttft_ms": -26172.817872604355,
+      "thr_tok_s_off": 0.2990591949255926,
+      "thr_tok_s_on": 18.240847802286314,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 0,
+      "j_per_token_off": 5257.1518125,
+      "j_per_token_on": 35.248125,
+      "total_joules_off": 336457.716,
+      "total_joules_on": 2255.88,
+      "ratio_j": 149.1469918612692,
+      "delta_j_per_token": -5221.9036875,
+      "ttft_ms_off": 26656.221879646182,
+      "ttft_ms_on": 463.9009349630214,
+      "delta_ttft_ms": -26192.32094468316,
+      "thr_tok_s_off": 0.2987703385303094,
+      "thr_tok_s_on": 18.42231209411632,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 1,
+      "j_per_token_off": 5253.4497656250005,
+      "j_per_token_on": 34.437062499999996,
+      "total_joules_off": 336220.78500000003,
+      "total_joules_on": 2203.9719999999998,
+      "ratio_j": 152.55220347626923,
+      "delta_j_per_token": -5219.012703125,
+      "ttft_ms_off": 26634.762676083483,
+      "ttft_ms_on": 466.96707111550495,
+      "delta_ttft_ms": -26167.795604967978,
+      "thr_tok_s_off": 0.29902487395416744,
+      "thr_tok_s_on": 18.71013521255932,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 2,
+      "j_per_token_off": 5254.908578125,
+      "j_per_token_on": 34.934968749999996,
+      "total_joules_off": 336314.149,
+      "total_joules_on": 2235.8379999999997,
+      "ratio_j": 150.41973032035418,
+      "delta_j_per_token": -5219.973609375,
+      "ttft_ms_off": 26642.61223480571,
+      "ttft_ms_on": 462.4211626360193,
+      "delta_ttft_ms": -26180.19107216969,
+      "thr_tok_s_off": 0.29896149520269727,
+      "thr_tok_s_on": 18.292645750219766,
+      "cached_tokens_on": 0
+     }
+    ],
+    "ratio_j": {
+     "mean": 150.37727832097139,
+     "std": 1.7542611866637141,
+     "min": 147.46447126955442,
+     "max": 152.950656266969,
+     "n": 9
+    },
+    "ratio_j_per_seed": {
+     "42": {
+      "mean": 151.0778794765139,
+      "std": 2.0431030566907302,
+      "min": 148.89899342732136,
+      "max": 152.950656266969,
+      "n": 3
+     },
+     "43": {
+      "mean": 149.3476469337693,
+      "std": 1.6389422798648445,
+      "min": 147.46447126955442,
+      "max": 150.45161967900043,
+      "n": 3
+     },
+     "44": {
+      "mean": 150.70630855263087,
+      "std": 1.7205992700637405,
+      "min": 149.1469918612692,
+      "max": 152.55220347626923,
+      "n": 3
+     }
+    },
+    "j_per_token_off": {
+     "mean": 5258.414508680556,
+     "std": 3.9988008975708977,
+     "min": 5253.114406250001,
+     "max": 5264.57609375,
+     "n": 9
+    },
+    "j_per_token_on": {
+     "mean": 34.97250520833333,
+     "std": 0.4212862402113406,
+     "min": 34.386015625,
+     "max": 35.700640625,
+     "n": 9
+    },
+    "j_per_token_on_band95": {
+     "lo": 34.00101913840598,
+     "hi": 35.94399127826068,
+     "half_width": 0.9714860699273514
+    },
+    "total_joules_off": {
+     "mean": 336538.52855555556,
+     "std": 255.92325744453746,
+     "min": 336199.32200000004,
+     "max": 336932.87,
+     "n": 9
+    },
+    "total_joules_on": {
+     "mean": 2238.240333333333,
+     "std": 26.962319373525798,
+     "min": 2200.705,
+     "max": 2284.841,
+     "n": 9
+    },
+    "delta_j_per_token": {
+     "mean": -5223.4420034722225,
+     "std": 3.801337198346067,
+     "min": -5228.875453125,
+     "max": -5218.123234375001,
+     "n": 9
+    },
+    "sign_delta_j": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "ttft_ms_off": {
+     "mean": 26624.190190490077,
+     "std": 20.334327882540748,
+     "min": 26601.466568012256,
+     "max": 26656.221879646182,
+     "n": 9
+    },
+    "ttft_ms_on": {
+     "mean": 465.38729981208843,
+     "std": 2.370814439190389,
+     "min": 462.4211626360193,
+     "max": 468.7493994133547,
+     "n": 9
+    },
+    "delta_ttft_ms": {
+     "mean": -26158.802890677987,
+     "std": 21.043286704568892,
+     "min": -26192.32094468316,
+     "max": -26136.84087182628,
+     "n": 9
+    },
+    "sign_delta_ttft": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "thr_tok_s_off": {
+     "mean": 0.2986646023429935,
+     "std": 0.00029768293877333507,
+     "min": 0.2982503542372932,
+     "max": 0.2990591949255926,
+     "n": 9
+    },
+    "thr_tok_s_on": {
+     "mean": 18.393831552728788,
+     "std": 0.2033515579040587,
+     "min": 18.190516720978408,
+     "max": 18.71013521255932,
+     "n": 9
+    },
+    "n_ttft_regressions": 0,
+    "n_thr_regressions": 0,
+    "cached_token_counter_available": false,
+    "cached_tokens_on_values": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "393216": {
+    "L": 393216,
+    "n_pairs": 9,
+    "pairs": [
+     {
+      "seed": 42,
+      "inv": 0,
+      "j_per_token_off": 10724.015859375,
+      "j_per_token_on": 49.45340625,
+      "total_joules_off": 686337.015,
+      "total_joules_on": 3165.018,
+      "ratio_j": 216.85090416547393,
+      "delta_j_per_token": -10674.562453125,
+      "ttft_ms_off": 54661.18307781289,
+      "ttft_ms_on": 658.4572475403547,
+      "delta_ttft_ms": -54002.72583027254,
+      "thr_tok_s_off": 0.1464707112054754,
+      "thr_tok_s_on": 13.044452390499545,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 1,
+      "j_per_token_off": 10716.142281249999,
+      "j_per_token_on": 50.028359375,
+      "total_joules_off": 685833.1059999999,
+      "total_joules_on": 3201.815,
+      "ratio_j": 214.201353294928,
+      "delta_j_per_token": -10666.113921875,
+      "ttft_ms_off": 54637.547143385746,
+      "ttft_ms_on": 662.2581136762165,
+      "delta_ttft_ms": -53975.28902970953,
+      "thr_tok_s_off": 0.14656919565153662,
+      "thr_tok_s_on": 12.93297508363243,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 2,
+      "j_per_token_off": 10723.38775,
+      "j_per_token_on": 50.246484374999994,
+      "total_joules_off": 686296.816,
+      "total_joules_on": 3215.7749999999996,
+      "ratio_j": 213.41568237827587,
+      "delta_j_per_token": -10673.141265625,
+      "ttft_ms_off": 54659.57966883434,
+      "ttft_ms_on": 674.6766821597703,
+      "delta_ttft_ms": -53984.90298667457,
+      "thr_tok_s_off": 0.14642691681867925,
+      "thr_tok_s_on": 12.756479428168204,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 0,
+      "j_per_token_off": 11258.850868852458,
+      "j_per_token_on": 51.644245901639344,
+      "total_joules_off": 686789.9029999999,
+      "total_joules_on": 3150.299,
+      "ratio_j": 218.0078471916475,
+      "delta_j_per_token": -11207.206622950818,
+      "ttft_ms_off": 54652.48515969142,
+      "ttft_ms_on": 670.344852085691,
+      "delta_ttft_ms": -53982.14030760573,
+      "thr_tok_s_off": 0.13942991998525123,
+      "thr_tok_s_on": 12.265796783496162,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 1,
+      "j_per_token_off": 11250.566295081968,
+      "j_per_token_on": 50.837311475409834,
+      "total_joules_off": 686284.544,
+      "total_joules_on": 3101.076,
+      "ratio_j": 221.30529661317559,
+      "delta_j_per_token": -11199.728983606557,
+      "ttft_ms_off": 54691.58902677009,
+      "ttft_ms_on": 672.4769523716532,
+      "delta_ttft_ms": -54019.112074398436,
+      "thr_tok_s_off": 0.13956971895751605,
+      "thr_tok_s_on": 12.365820740165239,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 2,
+      "j_per_token_off": 11253.07237704918,
+      "j_per_token_on": 51.04801639344262,
+      "total_joules_off": 686437.415,
+      "total_joules_on": 3113.929,
+      "ratio_j": 220.44093330323201,
+      "delta_j_per_token": -11202.024360655738,
+      "ttft_ms_off": 54495.953130943235,
+      "ttft_ms_on": 659.4148433068767,
+      "delta_ttft_ms": -53836.53828763636,
+      "thr_tok_s_off": 0.13958567942212477,
+      "thr_tok_s_on": 12.400510470702866,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 0,
+      "j_per_token_off": 10722.290015625,
+      "j_per_token_on": 49.384109374999994,
+      "total_joules_off": 686226.561,
+      "total_joules_on": 3160.5829999999996,
+      "ratio_j": 217.12024680256778,
+      "delta_j_per_token": -10672.90590625,
+      "ttft_ms_off": 54625.43040787568,
+      "ttft_ms_on": 659.4369512749836,
+      "delta_ttft_ms": -53965.9934566007,
+      "thr_tok_s_off": 0.1464330964292767,
+      "thr_tok_s_on": 12.96375185919541,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 1,
+      "j_per_token_off": 10731.005359375,
+      "j_per_token_on": 49.082921875,
+      "total_joules_off": 686784.343,
+      "total_joules_on": 3141.307,
+      "ratio_j": 218.63012529498073,
+      "delta_j_per_token": -10681.9224375,
+      "ttft_ms_off": 54487.15025855927,
+      "ttft_ms_on": 671.6581338550895,
+      "delta_ttft_ms": -53815.49212470418,
+      "thr_tok_s_off": 0.1463340691985002,
+      "thr_tok_s_on": 12.828570967799168,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 2,
+      "j_per_token_off": 10733.25575,
+      "j_per_token_on": 49.193749999999994,
+      "total_joules_off": 686928.368,
+      "total_joules_on": 3148.3999999999996,
+      "ratio_j": 218.18332105196293,
+      "delta_j_per_token": -10684.062,
+      "ttft_ms_off": 54508.56068643043,
+      "ttft_ms_on": 663.8254810823128,
+      "delta_ttft_ms": -53844.735205348115,
+      "thr_tok_s_off": 0.14629879545656327,
+      "thr_tok_s_on": 12.864265951952884,
+      "cached_tokens_on": 0
+     }
+    ],
+    "ratio_j": {
+     "mean": 217.57285667736048,
+     "std": 2.5790472120345047,
+     "min": 213.41568237827587,
+     "max": 221.30529661317559,
+     "n": 9
+    },
+    "ratio_j_per_seed": {
+     "42": {
+      "mean": 214.8226466128926,
+      "std": 1.799914226295425,
+      "min": 213.41568237827587,
+      "max": 216.85090416547393,
+      "n": 3
+     },
+     "43": {
+      "mean": 219.91802570268501,
+      "std": 1.709785788020338,
+      "min": 218.0078471916475,
+      "max": 221.30529661317559,
+      "n": 3
+     },
+     "44": {
+      "mean": 217.9778977165038,
+      "std": 0.7756173834605339,
+      "min": 217.12024680256778,
+      "max": 218.63012529498073,
+      "n": 3
+     }
+    },
+    "j_per_token_off": {
+     "mean": 10901.398506289845,
+     "std": 264.62776019825714,
+     "min": 10716.142281249999,
+     "max": 11258.850868852458,
+     "n": 9
+    },
+    "j_per_token_on": {
+     "mean": 50.10206722449909,
+     "std": 0.9110385645382796,
+     "min": 49.082921875,
+     "max": 51.644245901639344,
+     "n": 9
+    },
+    "j_per_token_on_band95": {
+     "lo": 48.00121229467381,
+     "hi": 52.20292215432436,
+     "half_width": 2.1008549298252728
+    },
+    "total_joules_off": {
+     "mean": 686435.3412222222,
+     "std": 344.3235267861522,
+     "min": 685833.1059999999,
+     "max": 686928.368,
+     "n": 9
+    },
+    "total_joules_on": {
+     "mean": 3155.3557777777773,
+     "std": 36.850065009365174,
+     "min": 3101.076,
+     "max": 3215.7749999999996,
+     "n": 9
+    },
+    "delta_j_per_token": {
+     "mean": -10851.296439065345,
+     "std": 263.8257466038776,
+     "min": -11207.206622950818,
+     "max": -10666.113921875,
+     "n": 9
+    },
+    "sign_delta_j": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "ttft_ms_off": {
+     "mean": 54602.16428447812,
+     "std": 80.91094441333146,
+     "min": 54487.15025855927,
+     "max": 54691.58902677009,
+     "n": 9
+    },
+    "ttft_ms_on": {
+     "mean": 665.8388063725498,
+     "std": 6.422181783826629,
+     "min": 658.4572475403547,
+     "max": 674.6766821597703,
+     "n": 9
+    },
+    "delta_ttft_ms": {
+     "mean": -53936.32547810557,
+     "std": 79.89579797765231,
+     "min": -54019.112074398436,
+     "max": -53815.49212470418,
+     "n": 9
+    },
+    "sign_delta_ttft": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "thr_tok_s_off": {
+     "mean": 0.14412423368054705,
+     "std": 0.003447965790951928,
+     "min": 0.13942991998525123,
+     "max": 0.14656919565153662,
+     "n": 9
+    },
+    "thr_tok_s_on": {
+     "mean": 12.713624852845767,
+     "std": 0.2909950738909554,
+     "min": 12.265796783496162,
+     "max": 13.044452390499545,
+     "n": 9
+    },
+    "n_ttft_regressions": 0,
+    "n_thr_regressions": 0,
+    "cached_token_counter_available": false,
+    "cached_tokens_on_values": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "524288": {
+    "L": 524288,
+    "n_pairs": 9,
+    "pairs": [
+     {
+      "seed": 42,
+      "inv": 0,
+      "j_per_token_off": 18118.738203124998,
+      "j_per_token_on": 65.701453125,
+      "total_joules_off": 1159599.2449999999,
+      "total_joules_on": 4204.893,
+      "ratio_j": 275.7737818774461,
+      "delta_j_per_token": -18053.03675,
+      "ttft_ms_off": 92488.06349237566,
+      "ttft_ms_on": 874.5522985700518,
+      "delta_ttft_ms": -91613.5111938056,
+      "thr_tok_s_off": 0.08670100078312688,
+      "thr_tok_s_on": 9.946059828869558,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 1,
+      "j_per_token_off": 18122.008921875,
+      "j_per_token_on": 64.95284375,
+      "total_joules_off": 1159808.571,
+      "total_joules_on": 4156.982,
+      "ratio_j": 279.002548242932,
+      "delta_j_per_token": -18057.056078125,
+      "ttft_ms_off": 92449.62202600436,
+      "ttft_ms_on": 872.957963438239,
+      "delta_ttft_ms": -91576.66406256612,
+      "thr_tok_s_off": 0.08664931619320064,
+      "thr_tok_s_on": 9.963705977255344,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 42,
+      "inv": 2,
+      "j_per_token_off": 18118.5026875,
+      "j_per_token_on": 65.806921875,
+      "total_joules_off": 1159584.172,
+      "total_joules_on": 4211.643,
+      "ratio_j": 275.32822036435664,
+      "delta_j_per_token": -18052.695765625,
+      "ttft_ms_off": 92521.45563811064,
+      "ttft_ms_on": 884.9315544357523,
+      "delta_ttft_ms": -91636.52408367489,
+      "thr_tok_s_off": 0.08662704336354567,
+      "thr_tok_s_on": 9.923198458429894,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 0,
+      "j_per_token_off": 18120.22565625,
+      "j_per_token_on": 65.357296875,
+      "total_joules_off": 1159694.442,
+      "total_joules_on": 4182.867,
+      "ratio_j": 277.2487009508072,
+      "delta_j_per_token": -18054.868359375,
+      "ttft_ms_off": 92496.18140090024,
+      "ttft_ms_on": 859.0328399441205,
+      "delta_ttft_ms": -91637.14856095612,
+      "thr_tok_s_off": 0.08663143354791303,
+      "thr_tok_s_on": 9.96126031740438,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 1,
+      "j_per_token_off": 18131.320734375,
+      "j_per_token_on": 65.0969375,
+      "total_joules_off": 1160404.527,
+      "total_joules_on": 4166.204,
+      "ratio_j": 278.5280142307002,
+      "delta_j_per_token": -18066.223796875,
+      "ttft_ms_off": 92507.25582259474,
+      "ttft_ms_on": 883.2264541997574,
+      "delta_ttft_ms": -91624.02936839499,
+      "thr_tok_s_off": 0.0865558846357132,
+      "thr_tok_s_on": 9.991039005811238,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 43,
+      "inv": 2,
+      "j_per_token_off": 18136.484796875,
+      "j_per_token_on": 64.66096875,
+      "total_joules_off": 1160735.027,
+      "total_joules_on": 4138.302,
+      "ratio_j": 280.4858193046327,
+      "delta_j_per_token": -18071.823828125,
+      "ttft_ms_off": 92349.59222649923,
+      "ttft_ms_on": 871.2439637747593,
+      "delta_ttft_ms": -91478.34826272447,
+      "thr_tok_s_off": 0.08652430493776472,
+      "thr_tok_s_on": 10.052778683810494,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 0,
+      "j_per_token_off": 18142.510921875,
+      "j_per_token_on": 65.651671875,
+      "total_joules_off": 1161120.699,
+      "total_joules_on": 4201.707,
+      "ratio_j": 276.34499478426267,
+      "delta_j_per_token": -18076.85925,
+      "ttft_ms_off": 92503.68079874897,
+      "ttft_ms_on": 884.1837156796828,
+      "delta_ttft_ms": -91619.49708306929,
+      "thr_tok_s_off": 0.08648476087991738,
+      "thr_tok_s_on": 9.895629581191496,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 1,
+      "j_per_token_off": 18143.483390625,
+      "j_per_token_on": 64.849984375,
+      "total_joules_off": 1161182.937,
+      "total_joules_on": 4150.399,
+      "ratio_j": 279.77621838285904,
+      "delta_j_per_token": -18078.63340625,
+      "ttft_ms_off": 92414.07925094245,
+      "ttft_ms_on": 884.4424409326166,
+      "delta_ttft_ms": -91529.63681000983,
+      "thr_tok_s_off": 0.0864511554509164,
+      "thr_tok_s_on": 10.08885212047183,
+      "cached_tokens_on": 0
+     },
+     {
+      "seed": 44,
+      "inv": 2,
+      "j_per_token_off": 18145.369140625,
+      "j_per_token_on": 65.7238125,
+      "total_joules_off": 1161303.625,
+      "total_joules_on": 4206.324,
+      "ratio_j": 276.0851577291716,
+      "delta_j_per_token": -18079.645328125,
+      "ttft_ms_off": 92424.1825506324,
+      "ttft_ms_on": 851.2769875815138,
+      "delta_ttft_ms": -91572.90556305088,
+      "thr_tok_s_off": 0.08645276209681577,
+      "thr_tok_s_on": 10.038959393120095,
+      "cached_tokens_on": 0
+     }
+    ],
+    "ratio_j": {
+     "mean": 277.61927287412976,
+     "std": 1.8834191004981944,
+     "min": 275.32822036435664,
+     "max": 280.4858193046327,
+     "n": 9
+    },
+    "ratio_j_per_seed": {
+     "42": {
+      "mean": 276.7015168282449,
+      "std": 2.005165939272679,
+      "min": 275.32822036435664,
+      "max": 279.002548242932,
+      "n": 3
+     },
+     "43": {
+      "mean": 278.7541781620467,
+      "std": 1.6303669531887806,
+      "min": 277.2487009508072,
+      "max": 280.4858193046327,
+      "n": 3
+     },
+     "44": {
+      "mean": 277.40212363209776,
+      "std": 2.060126995598513,
+      "min": 276.0851577291716,
+      "max": 279.77621838285904,
+      "n": 3
+     }
+    },
+    "j_per_token_off": {
+     "mean": 18130.960494791667,
+     "std": 11.338214359937261,
+     "min": 18118.5026875,
+     "max": 18145.369140625,
+     "n": 9
+    },
+    "j_per_token_on": {
+     "mean": 65.31132118055555,
+     "std": 0.4324610955784474,
+     "min": 64.66096875,
+     "max": 65.806921875,
+     "n": 9
+    },
+    "j_per_token_on_band95": {
+     "lo": 64.31406589415165,
+     "hi": 66.30857646695945,
+     "half_width": 0.9972552864038998
+    },
+    "total_joules_off": {
+     "mean": 1160381.4716666667,
+     "std": 725.6457190359847,
+     "min": 1159584.172,
+     "max": 1161303.625,
+     "n": 9
+    },
+    "total_joules_on": {
+     "mean": 4179.924555555555,
+     "std": 27.677510117020635,
+     "min": 4138.302,
+     "max": 4211.643,
+     "n": 9
+    },
+    "delta_j_per_token": {
+     "mean": -18065.649173611113,
+     "std": 11.432061574423082,
+     "min": -18079.645328125,
+     "max": -18052.695765625,
+     "n": 9
+    },
+    "sign_delta_j": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "ttft_ms_off": {
+     "mean": 92461.56813408986,
+     "std": 56.65865561148666,
+     "min": 92349.59222649923,
+     "max": 92521.45563811064,
+     "n": 9
+    },
+    "ttft_ms_on": {
+     "mean": 873.983135395166,
+     "std": 12.07639329701823,
+     "min": 851.2769875815138,
+     "max": 884.9315544357523,
+     "n": 9
+    },
+    "delta_ttft_ms": {
+     "mean": -91587.58499869469,
+     "std": 54.19378571580335,
+     "min": -91637.14856095612,
+     "max": -91478.34826272447,
+     "n": 9
+    },
+    "sign_delta_ttft": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "thr_tok_s_off": {
+     "mean": 0.08656418465432375,
+     "std": 9.192229613475655e-05,
+     "min": 0.0864511554509164,
+     "max": 0.08670100078312688,
+     "n": 9
+    },
+    "thr_tok_s_on": {
+     "mean": 9.98460926292937,
+     "std": 0.06390008967524831,
+     "min": 9.895629581191496,
+     "max": 10.08885212047183,
+     "n": 9
+    },
+    "n_ttft_regressions": 0,
+    "n_thr_regressions": 0,
+    "cached_token_counter_available": false,
+    "cached_tokens_on_values": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "track_b_by_L": {
+   "131072": {
+    "L": 131072,
+    "n_cells": 9,
+    "arms": {
+     "flat": {
+      "lat_ms_cellmeans": [
+       0.05792907904833555,
+       0.05512539064511657,
+       0.05575304385274649,
+       0.054816657211631536,
+       0.05569268250837922,
+       0.05488918395712972,
+       0.05510397022590041,
+       0.0554393045604229,
+       0.056152872275561094
+      ],
+      "lat_ms": {
+       "mean": 0.05565579825391372,
+       "std": 0.0009585324981561657,
+       "min": 0.054816657211631536,
+       "max": 0.05792907904833555,
+       "n": 9
+      }
+     },
+     "hashrope": {
+      "lat_ms_cellmeans": [
+       45.94073595944792,
+       46.43574130022898,
+       44.58226863062009,
+       45.926661405246705,
+       46.720181475393474,
+       46.547656471375376,
+       46.679970575496554,
+       45.75181193649769,
+       45.23789416998625
+      ],
+      "lat_ms": {
+       "mean": 45.98032465825478,
+       "std": 0.7183828178157557,
+       "min": 44.58226863062009,
+       "max": 46.720181475393474,
+       "n": 9
+      }
+     },
+     "radix": {
+      "lat_ms_cellmeans": [
+       8.187839353922755,
+       15.359363751485944,
+       8.204891229979694,
+       13.42525176005438,
+       8.175931638106704,
+       14.77726799203083,
+       10.7573073473759,
+       9.057254530489445,
+       8.202816301491112
+      ],
+      "lat_ms": {
+       "mean": 10.683102656104085,
+       "std": 3.033221792424364,
+       "min": 8.175931638106704,
+       "max": 15.359363751485944,
+       "n": 9
+      }
+     }
+    },
+    "oracle_lcp": {
+     "mean": 131072.0,
+     "std": 0.0,
+     "min": 131072.0,
+     "max": 131072.0,
+     "n": 9
+    },
+    "gate_checks": 72,
+    "gate_mismatches": 0,
+    "radix_available": true,
+    "delta_radix_minus_hashrope_ms": {
+     "mean": -35.2972220021507,
+     "std": 2.7652933503443657,
+     "min": -38.54424983728677,
+     "max": -31.07637754874304,
+     "n": 9
+    },
+    "sign_hashrope_beats_radix": {
+     "n": 9,
+     "wins": 0,
+     "losses": 9,
+     "ties": 0,
+     "p_one_sided": 1.0
+    },
+    "hashrope_over_radix_ratio": 4.304023478795521
+   },
+   "262144": {
+    "L": 262144,
+    "n_cells": 9,
+    "arms": {
+     "flat": {
+      "lat_ms_cellmeans": [
+       0.10815350105985999,
+       0.10459462646394968,
+       0.10529474820941687,
+       0.10548578575253487,
+       0.10731868678703904,
+       0.10783923789858818,
+       0.10815466521307826,
+       0.10464480146765709,
+       0.10424712672829628
+      ],
+      "lat_ms": {
+       "mean": 0.10619257550893559,
+       "std": 0.0016475023091930337,
+       "min": 0.10424712672829628,
+       "max": 0.10815466521307826,
+       "n": 9
+      }
+     },
+     "hashrope": {
+      "lat_ms_cellmeans": [
+       46.52749723754823,
+       46.40175047097728,
+       45.84286652971059,
+       46.6584408422932,
+       45.57276755804196,
+       45.79148499760777,
+       46.173205599188805,
+       46.71141499420628,
+       46.54425283661112
+      ],
+      "lat_ms": {
+       "mean": 46.24707567402058,
+       "std": 0.41934520952568427,
+       "min": 45.57276755804196,
+       "max": 46.71141499420628,
+       "n": 9
+      }
+     },
+     "radix": {
+      "lat_ms_cellmeans": [
+       14.241522934753448,
+       14.458572259172797,
+       22.59751776000485,
+       16.61526085808873,
+       25.917843740899116,
+       21.86645386973396,
+       18.168602779041976,
+       15.235605707857758,
+       14.184501895215362
+      ],
+      "lat_ms": {
+       "mean": 18.14287575608533,
+       "std": 4.321586145767458,
+       "min": 14.184501895215362,
+       "max": 25.917843740899116,
+       "n": 9
+      }
+     }
+    },
+    "oracle_lcp": {
+     "mean": 262144.0,
+     "std": 0.0,
+     "min": 262144.0,
+     "max": 262144.0,
+     "n": 9
+    },
+    "gate_checks": 72,
+    "gate_mismatches": 0,
+    "radix_available": true,
+    "delta_radix_minus_hashrope_ms": {
+     "mean": -28.104199917935247,
+     "std": 4.716144767660978,
+     "min": -32.35975094139576,
+     "max": -19.654923817142844,
+     "n": 9
+    },
+    "sign_hashrope_beats_radix": {
+     "n": 9,
+     "wins": 0,
+     "losses": 9,
+     "ties": 0,
+     "p_one_sided": 1.0
+    },
+    "hashrope_over_radix_ratio": 2.5490487999681513
+   },
+   "393216": {
+    "L": 393216,
+    "n_cells": 9,
+    "arms": {
+     "flat": {
+      "lat_ms_cellmeans": [
+       0.15879800776019692,
+       0.15412544598802924,
+       0.15558145241811872,
+       0.15499629080295563,
+       0.1554387854412198,
+       0.1562198158353567,
+       0.15357002848759294,
+       0.15502155292779207,
+       0.15483133029192686
+      ],
+      "lat_ms": {
+       "mean": 0.15539807888368765,
+       "std": 0.0014939805479546088,
+       "min": 0.15357002848759294,
+       "max": 0.15879800776019692,
+       "n": 9
+      }
+     },
+     "hashrope": {
+      "lat_ms_cellmeans": [
+       47.29877010686323,
+       45.78373924596235,
+       45.709117024671286,
+       45.42082839179784,
+       46.463192789815366,
+       45.84424727363512,
+       46.98103200644255,
+       46.73299699788913,
+       46.80546483723447
+      ],
+      "lat_ms": {
+       "mean": 46.33770985270126,
+       "std": 0.6628048480421868,
+       "min": 45.42082839179784,
+       "max": 47.29877010686323,
+       "n": 9
+      }
+     },
+     "radix": {
+      "lat_ms_cellmeans": [
+       20.44725907035172,
+       20.512550603598356,
+       25.257302331738174,
+       20.27559099951759,
+       20.494153490290046,
+       20.7951869815588,
+       20.364328112918884,
+       24.033066525589675,
+       20.425736845936626
+      ],
+      "lat_ms": {
+       "mean": 21.40057499572221,
+       "std": 1.8701456019213052,
+       "min": 20.27559099951759,
+       "max": 25.257302331738174,
+       "n": 9
+      }
+     }
+    },
+    "oracle_lcp": {
+     "mean": 393216.0,
+     "std": 0.0,
+     "min": 393216.0,
+     "max": 393216.0,
+     "n": 9
+    },
+    "gate_checks": 72,
+    "gate_mismatches": 0,
+    "radix_available": true,
+    "delta_radix_minus_hashrope_ms": {
+     "mean": -24.937134856979053,
+     "std": 2.089326936108502,
+     "min": -26.85151103651151,
+     "max": -20.451814692933112,
+     "n": 9
+    },
+    "sign_hashrope_beats_radix": {
+     "n": 9,
+     "wins": 0,
+     "losses": 9,
+     "ties": 0,
+     "p_one_sided": 1.0
+    },
+    "hashrope_over_radix_ratio": 2.1652553663611265
+   },
+   "524288": {
+    "L": 524288,
+    "n_cells": 9,
+    "arms": {
+     "flat": {
+      "lat_ms_cellmeans": [
+       0.20425452385097742,
+       0.2019373350776732,
+       0.2107782638631761,
+       0.21152565022930503,
+       0.21278636995702982,
+       0.21151290275156498,
+       0.20783167565241456,
+       0.20550156477838755,
+       0.20908575970679522
+      ],
+      "lat_ms": {
+       "mean": 0.20835711620748043,
+       "std": 0.0037497479614689616,
+       "min": 0.2019373350776732,
+       "max": 0.21278636995702982,
+       "n": 9
+      }
+     },
+     "hashrope": {
+      "lat_ms_cellmeans": [
+       46.762752754148096,
+       46.59795050974935,
+       44.8746255133301,
+       45.312000380363315,
+       46.103878295980394,
+       44.48325757402927,
+       45.66758597502485,
+       45.796904305461794,
+       45.30955827794969
+      ],
+      "lat_ms": {
+       "mean": 45.656501509559654,
+       "std": 0.7547335519347125,
+       "min": 44.48325757402927,
+       "max": 46.762752754148096,
+       "n": 9
+      }
+     },
+     "radix": {
+      "lat_ms_cellmeans": [
+       26.49847260909155,
+       28.81777920993045,
+       32.83707640366629,
+       34.81182083487511,
+       34.54669291386381,
+       37.63457521563396,
+       26.660958246793598,
+       26.52362280059606,
+       37.24061918910593
+      ],
+      "lat_ms": {
+       "mean": 31.73017971372853,
+       "std": 4.644073985154971,
+       "min": 26.49847260909155,
+       "max": 37.63457521563396,
+       "n": 9
+      }
+     }
+    },
+    "oracle_lcp": {
+     "mean": 524288.0,
+     "std": 0.0,
+     "min": 524288.0,
+     "max": 524288.0,
+     "n": 9
+    },
+    "gate_checks": 72,
+    "gate_mismatches": 0,
+    "radix_available": true,
+    "delta_radix_minus_hashrope_ms": {
+     "mean": -13.926321795831123,
+     "std": 5.180998830360423,
+     "min": -20.264280145056546,
+     "max": -6.848682358395308,
+     "n": 9
+    },
+    "sign_hashrope_beats_radix": {
+     "n": 9,
+     "wins": 0,
+     "losses": 9,
+     "ties": 0,
+     "p_one_sided": 1.0
+    },
+    "hashrope_over_radix_ratio": 1.4388982956124166
+   },
+   "1000000": {
+    "L": 1000000,
+    "n_cells": 9,
+    "arms": {
+     "flat": {
+      "lat_ms_cellmeans": [
+       0.6708865403197706,
+       0.6605507805943489,
+       0.6861964357085526,
+       0.6648796261288226,
+       0.6784636061638594,
+       0.6677209166809916,
+       0.685619655996561,
+       0.7163808913901448,
+       0.6652832380495965
+      ],
+      "lat_ms": {
+       "mean": 0.6773312990036275,
+       "std": 0.017281205059960742,
+       "min": 0.6605507805943489,
+       "max": 0.7163808913901448,
+       "n": 9
+      }
+     },
+     "hashrope": {
+      "lat_ms_cellmeans": [
+       44.24945235950872,
+       43.944757198914886,
+       43.0131207103841,
+       44.48230698471889,
+       44.55220536328852,
+       44.75491645280272,
+       45.04736000671983,
+       44.985676708165556,
+       44.72400713711977
+      ],
+      "lat_ms": {
+       "mean": 44.41708921351366,
+       "std": 0.6298507564798614,
+       "min": 43.0131207103841,
+       "max": 45.04736000671983,
+       "n": 9
+      }
+     },
+     "radix": {
+      "lat_ms_cellmeans": [
+       60.76381157618016,
+       52.84082767320797,
+       48.526790458709,
+       53.75445622485131,
+       48.03656006697565,
+       51.436326175462455,
+       54.74599648732692,
+       54.25363965332508,
+       54.346539138350636
+      ],
+      "lat_ms": {
+       "mean": 53.18943860604324,
+       "std": 3.776109547370884,
+       "min": 48.03656006697565,
+       "max": 60.76381157618016,
+       "n": 9
+      }
+     }
+    },
+    "oracle_lcp": {
+     "mean": 1000000.0,
+     "std": 0.0,
+     "min": 1000000.0,
+     "max": 1000000.0,
+     "n": 9
+    },
+    "gate_checks": 72,
+    "gate_mismatches": 0,
+    "radix_available": true,
+    "delta_radix_minus_hashrope_ms": {
+     "mean": 8.772349392529577,
+     "std": 3.6225713156867005,
+     "min": 3.4843547036871314,
+     "max": 16.514359216671437,
+     "n": 9
+    },
+    "sign_hashrope_beats_radix": {
+     "n": 9,
+     "wins": 9,
+     "losses": 0,
+     "ties": 0,
+     "p_one_sided": 0.001953125
+    },
+    "hashrope_over_radix_ratio": 0.835073472809076
+   }
+  },
+  "track_a_skips": [
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 42,
+    "inv": 0,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 42,
+    "inv": 1,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 42,
+    "inv": 2,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 43,
+    "inv": 0,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 43,
+    "inv": 1,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 43,
+    "inv": 2,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 44,
+    "inv": 0,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 44,
+    "inv": 1,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": false,
+    "seed": 44,
+    "inv": 2,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 42,
+    "inv": 0,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 42,
+    "inv": 1,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 42,
+    "inv": 2,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 43,
+    "inv": 0,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 43,
+    "inv": 1,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 43,
+    "inv": 2,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 44,
+    "inv": 0,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 44,
+    "inv": 1,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   },
+   {
+    "L": 1000000,
+    "cache_on": true,
+    "seed": 44,
+    "inv": 2,
+    "reason": "engine_serve_infeasible_dense_attention",
+    "detail": "L=1000000 > track_a_max_L=524288; vanilla vLLM dense-attention prefill at this length is not feasible within the vLLM worker RPC timeout. Track B identification runs at all L."
+   }
+  ]
+ },
+ "negative_controls": {
+  "r1": {
+   "total": 90,
+   "detected": 90,
+   "all_detected": true,
+   "rows": [
+    {
+     "key": "sharegpt_sample.jsonl",
+     "n": 45,
+     "detected": 45
+    },
+    {
+     "key": "lmsys_sample.jsonl",
+     "n": 45,
+     "detected": 45
+    }
+   ],
+   "grid_gate_context": {
+    "grid_gate_mismatches": 0,
+    "grid_gate_checks": 1800,
+    "interpretation": "grid gate shows 0/1800 mismatches; these controls prove that result is non-vacuous -- a gate that blindly returned query length would FAIL every control"
+   },
+   "env": {
+    "where": "author sandbox (Linux, CPU-only) -- NOT the GPU cluster",
+    "rationale": "the identification arms are pure CPU and engine-independent, so the negative control does not require the cluster; the GPU grid supplies the 0-mismatch gate, this supplies its non-vacuity",
+    "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "hashrope_version": "0.2.2",
+    "numpy_version": "2.4.4",
+    "torch_version": "2.13.0+cpu",
+    "note_env_delta": "grid ran numpy 2.2.6 / torch 2.6.0+cu124 on the node; arms are deterministic integer/LCP code, unaffected by these versions",
+    "radix_source": "third_party/sglang_radix_cache/radix_cache.py (vendored SGLang v0.1.17, byte-identical to repo)"
+   },
+   "seed": 42
+  },
+  "r2": {
+   "total": 15,
+   "detected": 15,
+   "all_detected": true,
+   "rows": [
+    {
+     "key": 131072,
+     "n": 3,
+     "detected": 3
+    },
+    {
+     "key": 262144,
+     "n": 3,
+     "detected": 3
+    },
+    {
+     "key": 393216,
+     "n": 3,
+     "detected": 3
+    },
+    {
+     "key": 524288,
+     "n": 3,
+     "detected": 3
+    },
+    {
+     "key": 1000000,
+     "n": 3,
+     "detected": 3
+    }
+   ],
+   "grid_gate_context": {
+    "grid_gate_mismatches": 0,
+    "grid_gate_checks": 1800,
+    "interpretation": "grid gate shows 0/1800 mismatches; these controls prove that result is non-vacuous -- a gate that blindly returned query length would FAIL every control"
+   },
+   "env": {
+    "where": "author sandbox (Linux, CPU-only) -- NOT the GPU cluster",
+    "rationale": "the identification arms are pure CPU and engine-independent, so the negative control does not require the cluster; the GPU grid supplies the 0-mismatch gate, this supplies its non-vacuity",
+    "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "hashrope_version": "0.2.2",
+    "numpy_version": "2.4.4",
+    "torch_version": "2.13.0+cpu",
+    "note_env_delta": "grid ran numpy 2.2.6 / torch 2.6.0+cu124 on the node; arms are deterministic integer/LCP code, unaffected by these versions",
+    "radix_source": "third_party/sglang_radix_cache/radix_cache.py (vendored SGLang v0.1.17, byte-identical to repo)"
+   },
+   "seed": 42
+  }
+ },
+ "env_check": {
+  "track_a_cells": 90,
+  "clocks_recorded_cells": 90,
+  "env_blocks_present": true
+ },
+ "criterion": [
+  {
+   "clause": "i",
+   "name": "exactness (HARD)",
+   "status": "PASS",
+   "detail": "gate 0/1800 mismatches (R1 0/1440, R2 0/360); non-vacuous via 105/105 corrupted-cached-entry controls detected (R1 90/90, R2 15/15)"
+  },
+  {
+   "clause": "ii",
+   "name": "GPU-energy neutrality of identity layer (HARD)",
+   "status": "PASS",
+   "detail": "BY CONSTRUCTION: one engine run per cell; the identifier never feeds the engine, so |J/token(hashrope) - J/token(radix)| is identically 0 (identical dispatched GPU work) and lies trivially within the 2% delta_E margin and any run-to-run band. No per-arm engine energies exist; none are fabricated. R1: cache-ON J/token 0.110 +/- 0.010 (n=9, 95% band +/- 0.022; delta_E threshold 2% = 0.002) | R2 L=131072: cache-ON J/token 22.338 +/- 0.282 (n=9, 95% band +/- 0.649; delta_E threshold 2% = 0.447) | R2 L=262144: cache-ON J/token 34.973 +/- 0.421 (n=9, 95% band +/- 0.971; delta_E threshold 2% = 0.699) | R2 L=393216: cache-ON J/token 50.102 +/- 0.911 (n=9, 95% band +/- 2.101; delta_E threshold 2% = 1.002) | R2 L=524288: cache-ON J/token 65.311 +/- 0.432 (n=9, 95% band +/- 0.997; delta_E threshold 2% = 1.306) | NOTE: absolute J/token is prefill-dominated (denominator = completion tokens); the OFF/ON ratio and delta are the meaningful quantities."
+  },
+  {
+   "clause": "iii",
+   "name": "framework caching energy, attributed (HARD)",
+   "status": "PASS",
+   "detail": "ATTRIBUTION: the ON-OFF delta is the ENGINE's prefix-cache effect, explicitly NOT hashrope's. R1: Delta(ON-OFF) J/token -2.367 +/- 0.074 (ratio OFF/ON 22.65x +/- 1.84, n=9; sign ON<OFF 9/9, p=0.0020); Delta TTFT -35.2 ms (sign 9/9, p=0.0020) | R2 L=131072: Delta(ON-OFF) J/token -1,532.736 +/- 3.170 (ratio OFF/ON 69.63x +/- 0.84, n=9; sign ON<OFF 9/9, p=0.0020); Delta TTFT -7,532.4 ms (sign 9/9, p=0.0020) | R2 L=262144: Delta(ON-OFF) J/token -5,223.442 +/- 3.801 (ratio OFF/ON 150.38x +/- 1.75, n=9; sign ON<OFF 9/9, p=0.0020); Delta TTFT -26,158.8 ms (sign 9/9, p=0.0020) | R2 L=393216: Delta(ON-OFF) J/token -10,851.296 +/- 263.826 (ratio OFF/ON 217.57x +/- 2.58, n=9; sign ON<OFF 9/9, p=0.0020); Delta TTFT -53,936.3 ms (sign 9/9, p=0.0020) | R2 L=524288: Delta(ON-OFF) J/token -18,065.649 +/- 11.432 (ratio OFF/ON 277.62x +/- 1.88, n=9; sign ON<OFF 9/9, p=0.0020); Delta TTFT -91,587.6 ms (sign 9/9, p=0.0020) | R2 L in [1000000]: Track A SKIPPED (engine_serve_infeasible_dense_attention; 18 cells) -- no engine energy at these L by design"
+  },
+  {
+   "clause": "iv",
+   "name": "identification-cost regimes (R2 win + R1 negative)",
+   "status": "PASS",
+   "detail": "crossover L*' bracketed in (524,288, 1,000,000]: radix still faster at L=524,288, hashrope faster at L=1,000,000 (44.42 +/- 0.63 ms vs radix 53.19 +/- 3.78 ms, hashrope 1.20x faster; paired sign 9/9, p=0.0020) | hashrope identification at L=1,000,000 = 44.42 ms = 0.048% of full-prefill (cache-OFF) TTFT and 5.08% of cache-ON TTFT at L=524,288 (largest dense-servable L; conservative reference -- TTFT grows superlinearly in L, so true fractions at L=1,000,000 would be smaller) | R1 HONEST NEGATIVE (~642-token median-scale prefixes): radix 0.037 ms < hashrope 17.46 ms (flat 0.005 ms); reported in full, not the lede"
+  },
+  {
+   "clause": "v",
+   "name": "honest negatives in full",
+   "status": "PASS",
+   "detail": "Disclosed: (a) R1 identification cost -- see clause (iv); (b) cache-ON regression check from data: R1: 0 TTFT / 0 throughput regressions (of 9 pairs); R2 L=131072: 0 TTFT / 0 throughput regressions (of 9 pairs); R2 L=262144: 0 TTFT / 0 throughput regressions (of 9 pairs); R2 L=393216: 0 TTFT / 0 throughput regressions (of 9 pairs); R2 L=524288: 0 TTFT / 0 throughput regressions (of 9 pairs); (c) (ii) neutrality is by-construction, not a measured per-arm difference; (d) conditional-on-use scope: an upstream identifier is redundant inside a single engine, valuable in multi-instance routing / cross-request dedup / opaque-blob contexts | numpy-flat is fastest at every L (0.677 ms at L=1,000,000): a C-vectorized O(L) scan with no persistence/edits/branching; the functional comparison is vs radix (the production engine matcher); hashrope's edge is the unification, not single-query LCP wall-clock"
+  },
+  {
+   "clause": "vi",
+   "name": "statistics + environment",
+   "status": "PASS",
+   "detail": "all aggregates n>=9: YES; paired sign tests computed throughout; GPU clocks recorded in 90/90 non-skipped Track A cells; env blocks (python/torch/vllm/hashrope versions, git sha, seeds) present in both grid files: YES"
+  },
+  {
+   "clause": "F6",
+   "name": "contingent per-arm end-to-end GPU win",
+   "status": "NOT TRIGGERED",
+   "detail": "Structural: the one-engine-run-per-cell design produces no per-arm end-to-end engine metrics (TTFT/throughput/J-token per identifier arm), so the F6 precondition (paired 9/9, p<0.05, effect >= 10% on an engine metric) cannot arise. S3 stands on (i)-(vi)."
+  }
+ ],
+ "verdict": "S3 SUPPORTED (real-stack validation + energy-transparency + caching attribution); F6 not triggered"
+}
