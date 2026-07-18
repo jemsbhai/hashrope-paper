@@ -1,0 +1,368 @@
+{
+  "experiment": "EXP-015",
+  "claim": "S3",
+  "purpose": "criterion (i) non-vacuity: corrupted-cached-entry negative control",
+  "model": "Qwen/Qwen2.5-7B-Instruct-1M",
+  "corpus_sha16": {
+    "42": "fda6a43a3fe34184"
+  },
+  "regime": "R2",
+  "seed": 42,
+  "L_sweep": [
+    131072,
+    262144,
+    393216,
+    524288,
+    1000000
+  ],
+  "rows": [
+    {
+      "L": 131072,
+      "seed": 42,
+      "gate_ok": true,
+      "gate_checks": 8,
+      "gate_mismatches": 0,
+      "arms_present": [
+        "oracle",
+        "hashrope",
+        "flat",
+        "radix"
+      ],
+      "controls": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 131072,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true
+        },
+        {
+          "where": "mid",
+          "pos": 65536,
+          "true_lcp": 131072,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 65536,
+            "hashrope": 65536,
+            "flat": 65536,
+            "radix": 65536
+          },
+          "detected": true
+        },
+        {
+          "where": "last",
+          "pos": 131071,
+          "true_lcp": 131072,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 131071,
+            "hashrope": 131071,
+            "flat": 131071,
+            "radix": 131071
+          },
+          "detected": true
+        }
+      ]
+    },
+    {
+      "L": 262144,
+      "seed": 42,
+      "gate_ok": true,
+      "gate_checks": 8,
+      "gate_mismatches": 0,
+      "arms_present": [
+        "oracle",
+        "hashrope",
+        "flat",
+        "radix"
+      ],
+      "controls": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 262144,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true
+        },
+        {
+          "where": "mid",
+          "pos": 131072,
+          "true_lcp": 262144,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 131072,
+            "hashrope": 131072,
+            "flat": 131072,
+            "radix": 131072
+          },
+          "detected": true
+        },
+        {
+          "where": "last",
+          "pos": 262143,
+          "true_lcp": 262144,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 262143,
+            "hashrope": 262143,
+            "flat": 262143,
+            "radix": 262143
+          },
+          "detected": true
+        }
+      ]
+    },
+    {
+      "L": 393216,
+      "seed": 42,
+      "gate_ok": true,
+      "gate_checks": 8,
+      "gate_mismatches": 0,
+      "arms_present": [
+        "oracle",
+        "hashrope",
+        "flat",
+        "radix"
+      ],
+      "controls": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 393216,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true
+        },
+        {
+          "where": "mid",
+          "pos": 196608,
+          "true_lcp": 393216,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 196608,
+            "hashrope": 196608,
+            "flat": 196608,
+            "radix": 196608
+          },
+          "detected": true
+        },
+        {
+          "where": "last",
+          "pos": 393215,
+          "true_lcp": 393216,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 393215,
+            "hashrope": 393215,
+            "flat": 393215,
+            "radix": 393215
+          },
+          "detected": true
+        }
+      ]
+    },
+    {
+      "L": 524288,
+      "seed": 42,
+      "gate_ok": true,
+      "gate_checks": 8,
+      "gate_mismatches": 0,
+      "arms_present": [
+        "oracle",
+        "hashrope",
+        "flat",
+        "radix"
+      ],
+      "controls": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 524288,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true
+        },
+        {
+          "where": "mid",
+          "pos": 262144,
+          "true_lcp": 524288,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 262144,
+            "hashrope": 262144,
+            "flat": 262144,
+            "radix": 262144
+          },
+          "detected": true
+        },
+        {
+          "where": "last",
+          "pos": 524287,
+          "true_lcp": 524288,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 524287,
+            "hashrope": 524287,
+            "flat": 524287,
+            "radix": 524287
+          },
+          "detected": true
+        }
+      ]
+    },
+    {
+      "L": 1000000,
+      "seed": 42,
+      "gate_ok": true,
+      "gate_checks": 8,
+      "gate_mismatches": 0,
+      "arms_present": [
+        "oracle",
+        "hashrope",
+        "flat",
+        "radix"
+      ],
+      "controls": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 1000000,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true
+        },
+        {
+          "where": "mid",
+          "pos": 500000,
+          "true_lcp": 1000000,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 500000,
+            "hashrope": 500000,
+            "flat": 500000,
+            "radix": 500000
+          },
+          "detected": true
+        },
+        {
+          "where": "last",
+          "pos": 999999,
+          "true_lcp": 1000000,
+          "arms_checked": [
+            "hashrope",
+            "flat",
+            "radix"
+          ],
+          "results": {
+            "oracle": 999999,
+            "hashrope": 999999,
+            "flat": 999999,
+            "radix": 999999
+          },
+          "detected": true
+        }
+      ]
+    }
+  ],
+  "all_detected": true,
+  "all_gates_ok": true,
+  "env": {
+    "where": "author sandbox (Linux, CPU-only) -- NOT the GPU cluster",
+    "rationale": "the identification arms are pure CPU and engine-independent, so the negative control does not require the cluster; the GPU grid supplies the 0-mismatch gate, this supplies its non-vacuity",
+    "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "hashrope_version": "0.2.2",
+    "numpy_version": "2.4.4",
+    "torch_version": "2.13.0+cpu",
+    "note_env_delta": "grid ran numpy 2.2.6 / torch 2.6.0+cu124 on the node; arms are deterministic integer/LCP code, unaffected by these versions",
+    "radix_source": "third_party/sglang_radix_cache/radix_cache.py (vendored SGLang v0.1.17, byte-identical to repo)"
+  },
+  "grid_gate_context": {
+    "grid_gate_mismatches": 0,
+    "grid_gate_checks": 1800,
+    "interpretation": "grid gate shows 0/1800 mismatches; these controls prove that result is non-vacuous -- a gate that blindly returned query length would FAIL every control"
+  }
+}

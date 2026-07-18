@@ -1,0 +1,147 @@
+{
+  "experiment": "EXP-015",
+  "claim": "S3",
+  "regime": "R1",
+  "seed": 42,
+  "model": "Qwen/Qwen2.5-7B-Instruct-1M",
+  "purpose": "criterion (i) non-vacuity: corrupted-cached-entry negative control (real ShareGPT/LMSYS streams)",
+  "rows": [
+    {
+      "dataset": "sharegpt_sample.jsonl",
+      "sha16": "c636b0c4b86860eb",
+      "pairs_tested": 15,
+      "controls": 45,
+      "all_detected": true,
+      "sample": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 1522,
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true,
+          "arms": [
+            "hashrope",
+            "flat",
+            "radix"
+          ]
+        },
+        {
+          "where": "mid",
+          "pos": 761,
+          "true_lcp": 1522,
+          "results": {
+            "oracle": 761,
+            "hashrope": 761,
+            "flat": 761,
+            "radix": 761
+          },
+          "detected": true,
+          "arms": [
+            "hashrope",
+            "flat",
+            "radix"
+          ]
+        },
+        {
+          "where": "last",
+          "pos": 1521,
+          "true_lcp": 1522,
+          "results": {
+            "oracle": 1521,
+            "hashrope": 1521,
+            "flat": 1521,
+            "radix": 1521
+          },
+          "detected": true,
+          "arms": [
+            "hashrope",
+            "flat",
+            "radix"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "lmsys_sample.jsonl",
+      "sha16": "060e13d73417171a",
+      "pairs_tested": 15,
+      "controls": 45,
+      "all_detected": true,
+      "sample": [
+        {
+          "where": "first",
+          "pos": 0,
+          "true_lcp": 428,
+          "results": {
+            "oracle": 0,
+            "hashrope": 0,
+            "flat": 0,
+            "radix": 0
+          },
+          "detected": true,
+          "arms": [
+            "hashrope",
+            "flat",
+            "radix"
+          ]
+        },
+        {
+          "where": "mid",
+          "pos": 214,
+          "true_lcp": 428,
+          "results": {
+            "oracle": 214,
+            "hashrope": 214,
+            "flat": 214,
+            "radix": 214
+          },
+          "detected": true,
+          "arms": [
+            "hashrope",
+            "flat",
+            "radix"
+          ]
+        },
+        {
+          "where": "last",
+          "pos": 427,
+          "true_lcp": 428,
+          "results": {
+            "oracle": 427,
+            "hashrope": 427,
+            "flat": 427,
+            "radix": 427
+          },
+          "detected": true,
+          "arms": [
+            "hashrope",
+            "flat",
+            "radix"
+          ]
+        }
+      ]
+    }
+  ],
+  "all_detected": true,
+  "env": {
+    "where": "author sandbox (Linux, CPU-only) -- NOT the GPU cluster",
+    "rationale": "the identification arms are pure CPU and engine-independent, so the negative control does not require the cluster; the GPU grid supplies the 0-mismatch gate, this supplies its non-vacuity",
+    "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "hashrope_version": "0.2.2",
+    "numpy_version": "2.4.4",
+    "torch_version": "2.13.0+cpu",
+    "note_env_delta": "grid ran numpy 2.2.6 / torch 2.6.0+cu124 on the node; arms are deterministic integer/LCP code, unaffected by these versions",
+    "radix_source": "third_party/sglang_radix_cache/radix_cache.py (vendored SGLang v0.1.17, byte-identical to repo)"
+  },
+  "grid_gate_context": {
+    "grid_gate_mismatches": 0,
+    "grid_gate_checks": 1800,
+    "interpretation": "grid gate shows 0/1800 mismatches; these controls prove that result is non-vacuous -- a gate that blindly returned query length would FAIL every control"
+  }
+}
