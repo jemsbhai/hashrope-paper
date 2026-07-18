@@ -2556,3 +2556,37 @@ Grid-recorded R2 corpus sha256[:16]: s42 fda6a43a3fe34184 (local data/raw/corpus
 - Governance lockstep (this commit): CLAIMS.md S3 -> SUPPORTED (EXP-015, confirmatory); PROGRAM.md row 015 -> DONE + energy-narrative and sequencing bullets aligned to the pre-registered hierarchy (energy-reduction headline = EXP-016 host/RAPL; EXP-015 = GPU-side validation + attribution); findings.md EXP-015 section appended; this LOGBOOK entry.
 
 EXP-015 closed.
+
+---
+
+## Paper scope lock for ICTAI: experimental program CLOSED; claims-in / claims-out fixed (decision)
+
+**Date:** 2026-07-18. **Status:** decision recorded. **Type:** paper-scope lock. This is a scope decision (which claims the ICTAI paper states), NOT a promotion-criterion change: no bar on any stated claim is lowered, and a claim the paper does not state owes no experiment.
+
+**Trigger.** After the EXP-015 closeout, PI decision (Muntaser, 2026-07-18): the evidence base for the paper's thesis is complete. The unification claim has confirmatory support on every leg of the theory spine, a competitive result against a real SOTA specialist on each of the three competitive legs, and a live 7B serving-stack validation with an honestly attributed energy story. Remaining PROGRAM rows are out of scope for this paper.
+
+### Claims IN (stated in the paper; all confirmatory, pre-registered, promoted verbatim)
+
+- S1 tokenizer-aligned ingestion (EXP-001); S4 linear-time flatten (EXP-002); M1 branch/snapshot O(B log N) (EXP-004); T3 prefix-reuse identification O(log^2 N) (EXP-005); T4 repetition O(log q) (EXP-006).
+- B1 vs SGLang RadixCache (EXP-017); B2 vs Ropey (EXP-020); B3 vs PagedAttention block-table COW (EXP-019).
+- S3 real-stack validation + energy-transparency + caching attribution (EXP-015). The paper's entire energy content is EXP-015's: measured engine-cache stakes (22.65x R1; 69.6x-277.6x R2 J/token; TTFT 92.5s -> 0.87s) attributed to the ENGINE, with hashrope as the exactly-verified, zero-GPU-overhead identification layer that beats the production matcher at L=1e6 where dense serving is infeasible. The paper makes NO hashrope-attributed energy-reduction claim.
+- S2 appears only in its reframed wording ("structurally congruent with paged layouts") if used in prose.
+
+### Claims OUT (not stated in the paper; no experiments owed)
+
+- L1, L2, L4: internal-draft-only claims. The prior draft was never submitted or shared; there is no external record to correct. These claims are simply not made. (L3 remains RETRACTED and is likewise not made.)
+- S5 (GC p99): untested at program rigor; not stated.
+- S6 (CPU/DRAM energy per mutation) and its vehicle EXP-016 (+ the EXP-003 workload it reuses): deferred, not abandoned -- explicit future work post-paper. The paper makes no CPU-energy-reduction claim.
+- C1 (cross-language byte-identical hashes): the paper may mention that Python and Rust implementations exist, but does not assert cross-language hash byte-identity as a validated claim (EXP-011 not run).
+- C2 (hash security / forgeability): handled as an honest limitations disclosure in the paper (the polynomial hash with public parameters is forgeable by an adversary; keyed/verify-on-match hashing is future work). No experiment.
+- C3 (multibyte index safety): RESOLVED by contract definition, no experiment needed. Investigation (2026-07-18) established that the published hashrope package is byte-indexed end-to-end and internally consistent (splits, hashes, and round-trips are exact over bytes at any offset); the byte/char index conflation cited by C3 existed only in the never-shipped draft's HybridContext (old/hashrope1_exmain.py) and was never part of any released hashrope version, so no released user is or was affected. The byte-index contract is now stated explicitly in the library (README "Byte-index contract" section + rope_split / rope_substr_hash / rope_from_bytes docstrings + CHANGELOG note): hashrope monorepo commit 100749d, docs-only (AST-verified: zero code changes), 146/146 package tests green before and after, plus a 200-trial / 1600-assertion randomized differential showing original and patched modules behaviorally indistinguishable.
+
+### PROGRAM rows marked out-of-scope-for-ICTAI
+
+003, 007, 008, 009, 010, 011, 012, 013, 014, 016, 018. All remain available as future work; none are abandoned. EXP-013 closes without an experiment (subsumed by the C3 contract resolution above). EXP-016 + EXP-003 are the named future-work pair.
+
+### Next phase
+
+Paper writing begins. Deliverables (PI rules, recorded 2026-07-18): main.tex + refs.bib + all figures/assets, compilable on Overleaf; every reference verified by web search before citation (no references from memory); no em-dashes or en-dashes; no telltale signs of AI authorship in prose. Experimental content is drawn exclusively from the claims-IN list and the committed summaries/figures; every number in the paper must trace to a committed results file.
+
+Scope locked.
