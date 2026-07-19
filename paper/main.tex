@@ -284,7 +284,32 @@ in 0.546 $\pm$ 0.016\ms{} against 437 $\pm$ 60\ms{} for a midpoint
 re-splitting strategy that re-hashes every byte, a roughly flat 730x to
 800x advantage for inputs of 1\,MB and above. Both paths scale
 linearly (log-log slopes 1.034 and 1.044); the eliminated cost is
-redundant re-hashing, not tree depth.
+redundant re-hashing, not tree depth. Table~\ref{tab:flatten} gives
+the sweep with the guard counts in-line; sizes are deliberately decimal
+rather than powers of two, since power-of-two leaf counts land every
+midpoint on a leaf boundary and would hide the control arm's cost
+entirely.
+
+\begin{table}[t]
+\caption{Flatten sweep, mean over nine runs. The guard column counts
+leaf re-allocations / splits / hash recomputations per flatten; the
+in-order materializer performs none at any size.}
+\label{tab:flatten}
+\centering
+\footnotesize
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$N$ (B) & re-split (ms) & in-order (ms) & guard L/S/H & speedup \\
+\midrule
+64\,K  & 11.2  & 0.003 & 30/15/30 & 3427x \\
+256\,K & 48.9  & 0.050 & 126/63/126 & 1082x \\
+1\,M   & 199.2 & 0.272 & 510/255/510 & 735x \\
+2\,M   & 437.4 & 0.546 & 1022/511/1022 & 800x \\
+4\,M   & 865.0 & 1.166 & 2044/1023/2044 & 741x \\
+8\,M   & 1692.6 & 2.305 & 4092/2047/4092 & 734x \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \textbf{Branch and snapshot in $O(B\log N)$ memory.} Forking a context
 allocates only the root-to-leaf spine when a branch first diverges. The
@@ -320,7 +345,20 @@ all 45 pairs at 20.9\ms{} per pair; in 44 the query returns the
 constructed prefix exactly, and in the one remaining pair it returns a
 longer prefix because the two suffixes happened to continue identically
 past the constructed boundary, which the byte oracle confirms is the
-true answer.
+true answer. Fig.~\ref{fig:lcp} shows the scaling contrast that
+carries the mechanism.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{exp005_lcp_latency}
+\caption{Prefix-identification latency over context size at half-way
+divergence, nine runs per point, log-log. The hash LCP is near flat
+(slope 0.028, the $O(\log^2 N)$ signature; step count exactly
+$2\lceil\log_2 N\rceil$ by guard) while the byte scan is linear
+(slope 1.008); the crossover falls near 1\,MB, where long-context
+serving begins.}
+\label{fig:lcp}
+\end{figure}
 
 \textbf{Repetition in $O(\log q)$.} Encoding $q$ copies of a unit
 creates one repeat node wrapping the unit subtree and computes the hash
@@ -456,10 +494,33 @@ table (1.1\us{} to 6.13\ms{}): \hr{} wins everywhere, but only
 because divergence is deferred, so the gated metric was locked before
 any data to branch creation, fork plus the first divergent step, which
 charges \hr{} its full $O(\log w)$ spine and admits a genuine
-crossover. On per-token append the specialist wins, 0.33\us{} to
+crossover (Table~\ref{tab:branchlat}). On per-token append the specialist wins, 0.33\us{} to
 1.0\us{} amortized $O(1)$ against \hr{}'s 11\us{} to 17\us{}
 $O(\log w)$, an 18x to 35x advantage pre-registered as the bounded
-price of generality and reported in full. \hr{} branch creation is essentially flat, 26\us{}
+price of generality and reported in full.
+
+\begin{table}[t]
+\caption{Branch-creation latency against the paged copy-on-write
+baseline over context size, reference block 16, nine runs per point;
+all sizes 9/9 paired at 1\,M for every block size.}
+\label{tab:branchlat}
+\centering
+\footnotesize
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$N$ (tok) & \hr{} (\textmu s) & paged b16 & speedup b16 & b8 \\
+\midrule
+1\,K   & 25.9 & 13.9\us{}  & 0.54x & 0.64x \\
+4\,K   & 30.1 & 25.9\us{}  & 0.86x & 1.30x \\
+16\,K  & 31.6 & 62.3\us{}  & 1.97x & 3.87x \\
+64\,K  & 33.8 & 219.5\us{} & 6.49x & 11.6x \\
+256\,K & 35.0 & 834.9\us{} & 23.9x & 44.9x \\
+1\,M   & 37.1 & 3.61\ms{}  & 97.4x & 168.7x \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\hr{} branch creation is essentially flat, 26\us{}
 to 37\us{} from 1\,K to 1\,M tokens, while the block table scales as
 $O(\lceil N/B\rceil)$, reaching 3.6\ms{} at 1\,M with block size 16:
 crossover at 16\,K tokens for the reference block size, 97.4x at 1\,M
@@ -499,6 +560,28 @@ Below those crossovers the paged table wins, concretely so on the
 bare puzzles with no prefix at all (a few-token base, 0.30x to
 0.40x): nobody reaches for a persistent content-indexed structure to
 branch a 500-token prompt, and the data says so.
+Table~\ref{tab:mb} spans the whole regime, honest cells included.
+
+\begin{table}[t]
+\caption{Ecological replay of real 120B-model tree-of-thought search:
+branch-creation speedup (paged over \hr{}) by prepended prefix length
+$P$, nine runs per point. Sub-crossover cells where the paged table
+wins are in the table, not a footnote.}
+\label{tab:mb}
+\centering
+\footnotesize
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$P$ (tok) & \hr{} (\textmu s) & paged b16 (\textmu s) & speedup b16 & b8 \\
+\midrule
+0      & 16.0 & 5.6  & 0.35x & 0.40x \\
+4\,K   & 17.5 & 20.0 & 1.14x & 2.14x \\
+16\,K  & 21.5 & 67.1 & 3.13x & 7.81x \\
+64\,K  & 23.3 & 239  & 10.3x & 20.9x \\
+256\,K & 24.4 & 948  & 38.9x & 74.6x \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
 \centering
@@ -664,7 +747,27 @@ by 22.65x $\pm$ 1.84 on the realistic streams and by 69.6x, 150.4x,
 217.6x, and 277.6x at $L$ from 131\,K to 524\,K on the controlled
 sweep, monotone in $L$, 9/9 paired with p = 0.002 at every point; time
 to first token falls from 92.5\,s to 0.87\,s at $L = 524{,}288$, with
-zero cache-on regressions anywhere (Fig.~\ref{fig:energy}). One
+zero cache-on regressions anywhere (Fig.~\ref{fig:energy}). Table~\ref{tab:energy} gives the exact values.
+
+\begin{table}[t]
+\caption{Live-stack prefix-cache effect, mean over nine runs, all
+rows 9/9 paired with p $=$ 0.002. The reduction is the engine's; the
+identity layer adds zero GPU work by construction.}
+\label{tab:energy}
+\centering
+\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Cell & J/tok off & J/tok on & ratio & TTFT off $\to$ on \\
+\midrule
+R1 streams & 2.48 & 0.110 & 22.7x & 56\ms{} $\to$ 21\ms{} \\
+$L{=}131\,K$ & 1555 & 22.3 & 69.6x & 7.8\,s $\to$ 0.22\,s \\
+$L{=}262\,K$ & 5258 & 35.0 & 150.4x & 26.6\,s $\to$ 0.47\,s \\
+$L{=}393\,K$ & 10901 & 50.1 & 217.6x & 54.6\,s $\to$ 0.67\,s \\
+$L{=}524\,K$ & 18131 & 65.3 & 277.6x & 92.5\,s $\to$ 0.87\,s \\
+\bottomrule
+\end{tabular}
+\end{table} One
 sentence of attribution matters more than any of these numbers: the
 reduction is the effect of the engine's cache, not of \hr{}. What
 \hr{} contributes is the verified identification that decides reuse,
@@ -765,7 +868,7 @@ the crossovers characterized here.
 Implementations and the full experimental record will be released with
 the camera-ready version.
 
-\balance
+% \balance (removed: caused 2pt vbox overfull with dense float pages; IEEE accepts unbalanced final page)
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
 
