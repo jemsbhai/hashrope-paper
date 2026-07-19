@@ -228,7 +228,12 @@ pre-registered promotion criteria written before any data; three corpus
 seeds crossed with three independent process invocations (nine runs per
 cell); mean and standard deviation reported across runs; and, wherever
 the claim is structural, a deterministic operation-count guard whose
-value is a proof rather than an estimate. Absolute Python timings carry
+value is a proof rather than an estimate. The error model was itself
+validated: an independent repeat of an early pilot showed within-run
+bootstrap intervals understate run-to-run variance (process spawn,
+scheduling, thermal state), so within-run intervals were retired and
+the spread across independent invocations is the reported uncertainty
+throughout. Absolute Python timings carry
 an interpreter constant; for those results the transferable content is
 the guard-proven operation count and the measured scaling exponent, and
 the Rust edit study in Section~\ref{sec:competitive} shows the direct
@@ -257,7 +262,12 @@ Repetition & $O(\log q)$ & 1 node per repeat & $10^6$x at $q{=}10^4$ \\
 to tokenizer-safe split points lets disjoint leaves be tokenized in
 parallel while reproducing the whole-string token IDs exactly: zero
 boundary divergences across byte-BPE, SentencePiece, and WordPiece
-families. Given that identity guarantee, chunking alone yields a stable single-thread gain
+families. Given that identity guarantee. The fixed-byte control fails it in both ways that
+matter: its token stream first diverges near token 1800 (a 0.085 percent
+token-count drift on prose), and its blind cuts bisect multibyte
+codepoints, leaving six invalid UTF-8 leaves; the aligned chunker
+produces zero of either, through a single boundary predicate verified by
+a global gate. Given the identity, chunking alone yields a stable single-thread gain
 (1.46x to 1.50x for GPT-2, 1.30x to 1.36x for T5, std at most 0.02)
 at 1\,MB to 4\,MB contexts, and
 16-way parallelism reaches 6.62 $\pm$ 0.37 (thread pool) and 7.59
@@ -285,7 +295,11 @@ $\lceil\log_2 w\rceil$ new nodes per fork, matching the bound. Measured
 memory compression grows with context size, reaching 166x at $N = 8$\,M
 with $B = 100$ (159\,KB against 25.8\,MB), and per-fork rope memory is
 near constant (slope 0.183) while deep-copy memory is linear (slope
-0.884). Fork creation takes about 0.037\ms{} independent of $N$,
+0.884). The compression is stable in the number of branches, 50.9x at
+fifty against 50.2x at one hundred at 2\,M, because both arms are
+linear in branch count, a fact the paged-baseline branch-count
+ablation in Section~\ref{sec:competitive} confirms independently.
+Fork creation takes about 0.037\ms{} independent of $N$,
 against 4 to 17\ms{} for deep copies (114x to 454x). This corrects an
 earlier internal $O(1)$ memory intuition: the honest bound is
 $O(B\log N)$, and it is what the data supports.
@@ -298,8 +312,15 @@ bound with a log-log slope of 0.028 across 64\,KB to 8\,MB, against
 falls near 1\,MB. At 8\,MB the hash LCP completes in 19\ms{} wherever
 the divergence lies, against 99 to 200\ms{} for scanning. Correctness
 is exact: zero mismatches against a byte-level oracle in 162 checks.
-A dedup workload with ten prompts sharing a 1.2\,MB prefix identifies
-the shared prefix for 98.5 percent of pairs at 20.9\ms{} per pair.
+One honest boundary: when two contexts diverge at the very first byte,
+the scan exits immediately while the binary search still pays its
+logarithmic steps, so trivially disjoint contexts belong to the scan.
+A dedup workload with ten prompts sharing a 1.2\,MB prefix resolves
+all 45 pairs at 20.9\ms{} per pair; in 44 the query returns the
+constructed prefix exactly, and in the one remaining pair it returns a
+longer prefix because the two suffixes happened to continue identically
+past the constructed boundary, which the byte oracle confirms is the
+true answer.
 
 \textbf{Repetition in $O(\log q)$.} Encoding $q$ copies of a unit
 creates one repeat node wrapping the unit subtree and computes the hash
@@ -314,6 +335,37 @@ cost stays near 0.01\ms{} regardless of the unit. Repeated system
 prompts, few-shot exemplars, and template headers are encoded once.
 
 % =========================================================================
+Table~\ref{tab:ledger} aggregates the verification machinery of every
+study in the paper. Each combines an independent correctness oracle, a
+deterministic structural guard, and, wherever exactness is claimed, a
+deliberately injected fault proving the gate can fail. The mismatch
+column is zero everywhere; the controls column is why those zeros mean
+something.
+
+\begin{table}[t]
+\caption{Verification ledger across all studies. Every oracle
+comparison in the paper returned zero mismatches; negative controls
+(injected faults) confirm each gate is non-vacuous.}
+\label{tab:ledger}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{1.55cm}p{2.6cm}p{2.9cm}@{}}
+\toprule
+Study & Oracle / gate (0 mismatches) & Guard and negative control \\
+\midrule
+Ingestion & whole-string token IDs, 3 tokenizer families & fixed-byte control fails: drift at token 1800, 6 invalid UTF-8 leaves \\
+Flatten & bytes equal original and control arm, all cells & op counts: 0 splits, 0 re-allocs, 0 re-hashes vs $\Theta$(leaves) \\
+Identify & byte-level scan, 162 checks & steps $= 2\lceil\log_2 N\rceil$ exactly, content-independent \\
+Branch & fork materialization, all cells & node count deterministic (std $=$ 0), $O(\log w)$ per fork \\
+Repeat & bytes and hash equal naive arm & node count $=$ unit $+$ 1 exactly \\
+vs Ropey & byte-identity and maintained hash $\equiv$ recompute, every edit step & bit-flip on maintained hash fails the gate \\
+vs Paged & token oracle, every node, both milestones & spine $\le \lceil\log_2 w\rceil{+}3$; fork entries $= \lceil N/B\rceil$ \\
+vs radix & token oracle, all cells & instrumented matcher proves $\ge L$ comparisons; \hr{} $\le 2\lceil\log_2 N\rceil$ \\
+Live stack & three arms token-identical, 1800 checks & 105/105 corrupted entries detected at exact position \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Against the Specialists}\label{sec:competitive}
 
 Unification is only interesting if the unified structure is competitive
@@ -397,9 +449,17 @@ characters, 2901.8x at 10\,M, 9/9 paired at every size.}
 reimplement the block-table copy-on-write design of
 PagedAttention~\cite{kwon2023pagedattention} faithfully (ref-counted
 physical blocks, per-sequence block tables, copy-on-write fork and
-append; 55 unit tests) and compare branch creation, defined as fork
-plus the first divergent step so that \hr{} is charged its full
-$O(\log w)$ spine. \hr{} branch creation is essentially flat, 26\us{}
+append; 55 unit tests). Three latency decompositions are measured and
+all three reported. On a bare fork, \hr{} shares the immutable root in
+about 39\,ns, flat at every $N$, while the baseline copies its block
+table (1.1\us{} to 6.13\ms{}): \hr{} wins everywhere, but only
+because divergence is deferred, so the gated metric was locked before
+any data to branch creation, fork plus the first divergent step, which
+charges \hr{} its full $O(\log w)$ spine and admits a genuine
+crossover. On per-token append the specialist wins, 0.33\us{} to
+1.0\us{} amortized $O(1)$ against \hr{}'s 11\us{} to 17\us{}
+$O(\log w)$, an 18x to 35x advantage pre-registered as the bounded
+price of generality and reported in full. \hr{} branch creation is essentially flat, 26\us{}
 to 37\us{} from 1\,K to 1\,M tokens, while the block table scales as
 $O(\lceil N/B\rceil)$, reaching 3.6\ms{} at 1\,M with block size 16:
 crossover at 16\,K tokens for the reference block size, 97.4x at 1\,M
@@ -455,7 +515,14 @@ the reference block size 16, 613x at block size 8).}
 the RadixCache of SGLang~\cite{zheng2024sglang} byte-identically
 (v0.1.17, checksum verified) and compare single-query prefix
 identification over token sequences, with a NumPy flat scan as the
-C-speed floor. The radix walk is $\Theta(L)$ at about 29\,ns per token;
+C-speed floor. Token streams enter \hr{} as fixed-width four-byte
+words, a deliberately conservative encoding (two bytes would halve the
+byte length and shrink the logarithm in \hr{}'s favor). The radix
+walk's $\Theta(L)$ cost is not assumed but proven: a deterministically
+generated instrumented copy of the vendored matcher, used only for
+operation counting and never timed, confirms at least $L$ token
+comparisons on every full-prefix query, while \hr{}'s step guard holds
+at $2\lceil\log_2 N\rceil$ per query. The walk costs about 29\,ns per token;
 the \hr{} LCP is near flat at 13\ms{} to 18\ms{}
 (Table~\ref{tab:radix}). The crossover on CPU
 falls near $L^* \approx 571$\,K tokens: 1.70x at 1\,M and 4.63x at
@@ -518,7 +585,10 @@ across four A100-40GB GPUs.
 \textbf{Design.} Two decoupled tracks share every run. Track A varies
 exactly one engine knob, the prefix cache (off, on), and measures GPU
 energy through NVML on-board energy counters, time to first token, and
-throughput. Track B runs the three identification arms (\hr{}, the
+throughput; the long-context serving configuration (chunked prefill,
+eager execution, single-sequence batching) is held constant across the
+cache axis, so the cache flag is the only difference in dispatched
+work. Track B runs the three identification arms (\hr{}, the
 vendored radix matcher, the flat scan) on CPU, strictly outside the GPU
 measurement window, over the same token streams the engine serves, so
 the identity layer can never contaminate the energy measurement: with
@@ -565,8 +635,10 @@ live-stack crossover inside the predicted region
 sweep, the logarithmic signature, while the radix walk grows linearly.
 The one-million-token point deserves emphasis: at that length the
 dense-attention engine cannot complete a prefill at all in this
-configuration (the runs record the serving wall explicitly and skip
-the engine track there), yet the identity layer keeps answering in
+configuration: it initializes cleanly and allocates KV cache for 1.39x
+the full request across the four GPUs, but the first dense $O(L^2)$
+prefill step never returns within the engine's execution window (the
+runs record the wall explicitly and skip the engine track there), yet the identity layer keeps answering in
 44\ms{}, which is 0.048 percent of the full prefill time at the
 largest length the engine does serve. The serving wall belongs to the
 engine configuration; the identification does not share it.
