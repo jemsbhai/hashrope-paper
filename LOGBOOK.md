@@ -2590,3 +2590,38 @@ EXP-015 closed.
 Paper writing begins. Deliverables (PI rules, recorded 2026-07-18): main.tex + refs.bib + all figures/assets, compilable on Overleaf; every reference verified by web search before citation (no references from memory); no em-dashes or en-dashes; no telltale signs of AI authorship in prose. Experimental content is drawn exclusively from the claims-IN list and the committed summaries/figures; every number in the paper must trace to a committed results file.
 
 Scope locked.
+## Paper submitted: IEEE ICTAI 2026 (status)
+
+**Date:** 2026-07-18. **Status:** SUBMITTED (EasyChair, double-blind). Append-only status
+entry; no claim, criterion, or scope change.
+
+**Submitted artifact (paper/ at repo HEAD), SHA-256:**
+- main.tex  3d3923981824d2017537b94da4035ed1b721fa9a80c4d20522d8426b55fb1824
+- refs.bib  a984c853c974632385dd5ac0fbe176484f9e790dfedf42fa1d26ba887cae7869
+- figures/exp015_identification_latency_vs_L.pdf  9181ebaafa08fac37d194c6efd1e14bac6eeb389a8c256a868ee7f0323e6f551
+- figures/exp015_caching_energy_vs_L.pdf  646884c6c5c179e534d1aee2d8167b88bfcd3dde234b5cd562159594575fc29e
+- figures/exp020_edit_identity_latency.pdf  cacd4e8f5985035f2d9340447a7c9b6418c63c71f218f48722262da4485f4ef3
+- figures/exp019_branch_memory_compression.pdf  66877c7249e4edcdbe7b8d1a16930cac4cf8564a526ca5c1222401618f6923d6
+- figures/exp005_lcp_latency.pdf  bfa966f62fd10fa543ef885f334a433c4235af6b6add69a238c612099e4eb7aa
+
+**Shape:** 8 pages IEEEtran (submission limit), 7 tables, 5 figures, 14 references
+(every reference web-verified with dated provenance comments in refs.bib; none from
+memory). Title: "Hashrope: A Persistent Data Structure for Mechanisms of LLM Context
+Management". Keywords: persistent data structures; ropes; polynomial hashing; LLM
+serving; KV-cache reuse; context management. Abstract as in main.tex.
+
+**Content basis:** claims-in per the 2026-07-18 scope lock (S1, S4, M1, T3, T4, B1,
+B2, B3, S3; S2 reframed wording). Draft arc v1-v5 applied the complete LOGBOOK +
+findings audit: verification-ledger table; full ablation coverage (r-sweep,
+branch-count sweep, unit-size sweep, full radix L-table, Milestone B per-P table);
+bare-fork/append decomposition with the Addendum-A gated-metric rationale; all honest
+negatives in-table or in-prose (P=0, b64 9.6x, f=0, K-sweep, real-pair cells, raw-edit
+constant, arena retention); agent-motivation framing per the 2026-06-18 note, scoped
+as hypothesis; energy attributed to the engine per criterion (iii).
+
+**Next:** await reviews. Camera-ready restores author identity and replaces the
+supplementary-materials sentence with artifact links. Deferred remain deferred:
+Rust 0.3.1 code fixes; EXP-016 / EXP-003 / EXP-018 as stated future work.
+
+---
+

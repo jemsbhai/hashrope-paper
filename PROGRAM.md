@@ -1,5 +1,9 @@
 # Experimental Program
 
+**STATUS 2026-07-18: paper SUBMITTED to IEEE ICTAI 2026** (EasyChair,
+double-blind; artifact hashes and full submission record in the LOGBOOK
+"Paper submitted" entry). Program remains CLOSED per the scope lock.
+
 The forward-looking registry of every experiment for the hashrope debut paper.
 This file is the **roadmap**; `CLAIMS.md` is the authoritative claim ledger
 (every experiment here earns one or more claim rows there); `LOGBOOK.md` is the
