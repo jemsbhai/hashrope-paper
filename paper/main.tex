@@ -109,6 +109,21 @@ rebalancing. \hr{} does all of it in one object, so the context an
 agent edits, the snapshot a search forks, and the key a scheduler
 matches are the same thing.
 
+The setting where the four mechanisms stop being four separate
+problems is the long-lived agent. A coding or research agent over an
+extended session holds one persistent context and subjects it,
+interleaved, to all four operations: it edits the middle of the
+buffer, forks it to explore alternatives, needs to know whether a
+region is identical to something already processed downstream so a KV
+cache or deduplicator can reuse it, and carries repeated boilerplate
+across turns. Four specialists mean four representations of the same
+object and conversions between them; one structure means the
+operations compose. Whether deployed agent sessions actually occupy
+the winning regime is a motivating hypothesis, not a claim we test;
+what this paper establishes precisely is where that regime begins,
+through per-mechanism crossovers and a query-rate ablation, so the
+hypothesis is checkable.
+
 We support the claim with three layers of evidence, all pre-registered
 and replicated (three seeds, three process invocations, nine runs per
 point, mean and standard deviation across runs, exact paired sign
@@ -242,8 +257,9 @@ Repetition & $O(\log q)$ & 1 node per repeat & $10^6$x at $q{=}10^4$ \\
 to tokenizer-safe split points lets disjoint leaves be tokenized in
 parallel while reproducing the whole-string token IDs exactly: zero
 boundary divergences across byte-BPE, SentencePiece, and WordPiece
-families. Given that identity guarantee, chunking alone yields a stable
-1.46x to 1.50x single-thread gain at 1\,MB to 4\,MB contexts, and
+families. Given that identity guarantee, chunking alone yields a stable single-thread gain
+(1.46x to 1.50x for GPT-2, 1.30x to 1.36x for T5, std at most 0.02)
+at 1\,MB to 4\,MB contexts, and
 16-way parallelism reaches 6.62 $\pm$ 0.37 (thread pool) and 7.59
 $\pm$ 0.41 (multiprocessing) on GPT-2 tokenization of 4\,MB inputs,
 with multiprocessing beating threads 9/9 (p = 0.004) at a modest 13 to
@@ -315,8 +331,14 @@ ASCII buffers so character and byte indices coincide. \hr{} maintains
 its fingerprint eagerly on every edit; Ropey, which maintains no hash,
 is given \hr{}'s own polynomial hash to run over its materialized bytes
 when identity is queried, so the comparison is maintained-incrementally
-against recomputed-from-scratch with the same hash function. Two
-findings. On raw churn, both arms are in the same $O(\log N)$ class
+against recomputed-from-scratch with the same hash function.
+Correctness is gated as in every study here: the two arms stay
+byte-identical, and the maintained fingerprint equals a from-scratch
+recompute, at every edit step of every run with zero mismatches, made
+non-vacuous by a bit-flip negative control on the maintained hash.
+One configuration choice conservatively handicaps \hr{}: its leaf cap
+of 512 bytes is finer than Ropey's roughly 1\,KB chunk target, giving
+\hr{} the deeper tree. Two findings. On raw churn, both arms are in the same $O(\log N)$ class
 (per-edit slopes 0.202 against 0.212); \hr{} pays a bounded constant
 factor for the maintained fingerprint that peaks at 22.0x near 100\,K
 and declines to 14.0x at 10\,M as both arms go logarithmic. On the
@@ -403,10 +425,20 @@ byte-identically in both arms (0 mismatches at every prefix and block
 size), \hr{} branch creation stays flat at 16\us{} to 24\us{} while
 the paged table reaches 1.82\ms{}, giving 74.6x, 38.9x, 19.1x, and
 9.6x at the 256\,K prefix for block sizes 8 through 64 (9/9 paired at
-every block size), and marginal branching memory on the real
-five-survivor beams compresses 17x to 67x across the
-deployment-standard block sizes. Below the 16\,K crossover the paged
-table is faster, as expected for short contexts.
+every block size). Marginal branching memory on the real
+five-survivor beams compresses 67x, 34x, and 17x across the
+deployment-standard block sizes 8 to 32, the whole beam fitting in
+about 480\,KB against 4.6\,MB to 32\,MB; at the largest block, 64,
+compression is 9.6x, just under the pre-registered 10x bar, disclosed
+here as the sensitivity tail of the block-size trend rather than
+folded away. The crossover itself is block-dependent and
+characterized rather than universal: block 8 crosses by a 4\,K-token
+prefix, blocks 16 and 32 by 16\,K, block 64 by 64\,K, which tells an
+operator exactly where the tradeoff sits for their configuration.
+Below those crossovers the paged table wins, concretely so on the
+bare puzzles with no prefix at all (a few-token base, 0.30x to
+0.40x): nobody reaches for a persistent content-indexed structure to
+branch a 500-token prompt, and the data says so.
 
 \begin{figure}[t]
 \centering
@@ -464,7 +496,14 @@ $K$ pairwise queries (610x to the radix side at $K = 100$). The radix
 structure also requires the $O(N)$ materialized token sequence per
 cached context, where \hr{} holds the compressed persistent form
 (Section~\ref{sec:mechanisms}); the identification advantage claimed
-here is for long shared prefixes, one pair at a time.
+here is for long shared prefixes, one pair at a time. The pattern
+across all three studies is the thesis in miniature: each specialist
+buys its per-operation constant by giving something up elsewhere (the
+flat scan's cheap query costs $O(N)$ edits, the radix tree's cheap
+match costs $O(N)$ materialized state per cached context, Ropey's
+cheap edit costs $O(N)$ per identity query), while \hr{} pays a
+higher per-query constant once and amortizes it across all four
+mechanisms simultaneously.
 
 % =========================================================================
 \section{Validation on a Live 7B Serving Stack}\label{sec:realstack}
@@ -646,8 +685,11 @@ one-million-token shared prefix exactly and faster than the production
 matcher at a length the dense engine cannot serve, while the measured
 engine-side energy quantifies what such reuse is worth. Future work:
 keyed or verify-on-match hashing for adversarial settings, a paired
-CPU-energy study of logarithmic edits against linear copies, and
-integration of the identity layer into multi-instance routing.
+CPU-energy study of logarithmic edits against linear copies,
+integration of the identity layer into multi-instance routing, and
+replaying recorded real agent sessions to measure where deployed
+operation mixes, context sizes, and identity-query rates sit against
+the crossovers characterized here.
 Implementations and the full experimental record will be released with
 the camera-ready version.
 
