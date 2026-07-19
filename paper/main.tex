@@ -858,13 +858,37 @@ specialist on each mechanism's home ground, dominates once identity
 enters the workload, and, on a live 7B serving stack, identifies a
 one-million-token shared prefix exactly and faster than the production
 matcher at a length the dense engine cannot serve, while the measured
-engine-side energy quantifies what such reuse is worth. Future work:
-keyed or verify-on-match hashing for adversarial settings, a paired
-CPU-energy study of logarithmic edits against linear copies,
-integration of the identity layer into multi-instance routing, and
-replaying recorded real agent sessions to measure where deployed
-operation mixes, context sizes, and identity-query rates sit against
-the crossovers characterized here.
+engine-side energy quantifies what such reuse is worth.
+
+The applications reach past a single serving engine, because the
+structure is domain-agnostic over bytes and the crossovers say exactly
+where it pays. A fingerprint that is maintained rather than recomputed
+travels: it can route requests across engine instances, deduplicate
+across requests and tenants, and survive cache eviction, none of which
+a per-instance radix tree provides. The same edit-plus-identity regime
+appears wherever long strings are edited and compared, in versioned
+document stores and collaborative editors (branch and snapshot plus
+repetition encoding give logarithmic-memory histories), in
+storage-layer deduplication keyed by maintained fingerprints instead
+of rescans, and in multi-megabyte sequence data such as genomic
+strings, whose lengths sit squarely beyond every crossover measured
+here. In each case the query-rate ablation gives the honest
+precondition: the win scales with how often the surrounding system
+asks whether content is identical.
+
+Future work follows the same discipline as the results. Keyed or
+verify-on-match hashing closes the adversarial gap the fingerprint
+leaves open. A recorded-agent-trace study would replay real sessions
+to measure where deployed operation mixes, context sizes, and
+identity-query rates sit against the crossovers, upgrading the
+motivating hypothesis of Section~\ref{sec:intro} to a tested claim. A
+full serving-loop replay (per-request match and insert against a live
+cache pool) extends the single-query identification study, and a
+paired host-energy study of logarithmic edits against linear copies
+would complete the energy story on the CPU side. Finally, rerunning
+the Python-side competitive legs on the Rust implementation would shed
+the interpreter constant that the guards already show is not
+structural.
 Implementations and the full experimental record are available as
 supplementary materials.
 
