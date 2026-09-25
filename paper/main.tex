@@ -1,13 +1,13 @@
 % =========================================================================
 % Hashrope: A Persistent Data Structure for Mechanisms of LLM Context
-% Management  --  IEEE ICTAI submission (double-blind)
+% Management  --  IEEE ICTAI 2026 camera-ready (accepted)
 %
 % BUILD (Overleaf): pdfLaTeX, main document = main.tex.
 % Upload: main.tex, refs.bib, figures/*.pdf.
 % HOUSE RULES: no em-dashes or en-dashes in prose; every number traces to
 % a committed results file; every reference verified by web search at the
-% time of addition (see refs.bib header); double-blind (no author
-% identity, no artifact links until camera-ready).
+% time of addition (see refs.bib header); camera-ready: author identity
+% and artifact links restored after double-blind review.
 % =========================================================================
 \documentclass[10pt,conference]{IEEEtran}
 
@@ -30,9 +30,8 @@
 \title{Hashrope: A Persistent Data Structure for Mechanisms of LLM Context
 Management}
 
-\author{\IEEEauthorblockN{Anonymous Author(s)}
-\IEEEauthorblockA{Anonymous Affiliation\\
-Submission to IEEE ICTAI}}
+\author{\IEEEauthorblockN{Muntaser Syed, Ameerah Alsulami, and Marius Silaghi}
+\IEEEauthorblockA{Florida Institute of Technology}}
 
 \maketitle
 
@@ -262,7 +261,7 @@ Repetition & $O(\log q)$ & 1 node per repeat & $10^6$x at $q{=}10^4$ \\
 to tokenizer-safe split points lets disjoint leaves be tokenized in
 parallel while reproducing the whole-string token IDs exactly: zero
 boundary divergences across byte-BPE, SentencePiece, and WordPiece
-families. Given that identity guarantee. The fixed-byte control fails it in both ways that
+families. The fixed-byte control fails that guarantee in both ways that
 matter: its token stream first diverges near token 1800 (a 0.085 percent
 token-count drift on prose), and its blind cuts bisect multibyte
 codepoints, leaving six invalid UTF-8 leaves; the aligned chunker
@@ -661,7 +660,7 @@ mechanisms simultaneously.
 The CPU studies leave one question open: does any of this survive
 contact with a real serving engine, at lengths that matter, with
 correctness verified end to end and energy measured rather than
-asserted? We answer it on vLLM 0.8.5 serving
+asserted? We answer it on vLLM 0.8.5.post1 serving
 Qwen2.5-7B-Instruct-1M~\cite{yang2025qwen1m} with tensor parallelism
 across four A100-40GB GPUs.
 
@@ -760,7 +759,7 @@ identity layer adds zero GPU work by construction.}
 \toprule
 Cell & J/tok off & J/tok on & ratio & TTFT off $\to$ on \\
 \midrule
-R1 streams & 2.48 & 0.110 & 22.7x & 56\ms{} $\to$ 21\ms{} \\
+Realistic & 2.48 & 0.110 & 22.7x & 56\ms{} $\to$ 21\ms{} \\
 $L{=}131\,K$ & 1555 & 22.3 & 69.6x & 7.8\,s $\to$ 0.22\,s \\
 $L{=}262\,K$ & 5258 & 35.0 & 150.4x & 26.6\,s $\to$ 0.47\,s \\
 $L{=}393\,K$ & 10901 & 50.1 & 217.6x & 54.6\,s $\to$ 0.67\,s \\
