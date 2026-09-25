@@ -226,7 +226,8 @@ def fig_caching_energy(summary, out_stem: Path, footer=True):
                      textcoords="offset points", ha="center", fontsize=8)
     ax1.set_ylabel("GPU energy ratio\ncache-OFF / cache-ON (J/token)")
     ax1.grid(True, which="major", ls=":", lw=0.6, alpha=0.6)
-    ax1.set_ylim(bottom=0)
+    # camera-ready: 15% headroom so the top value label clears the panel title
+    ax1.set_ylim(0, max(m + s for m, s in zip(ta["ratio_mean"], ta["ratio_std"])) * 1.15)
 
     # bottom: TTFT OFF vs ON
     ax2.errorbar(Ls, ta["ttft_off"], yerr=ta["ttft_off_std"], color=C_OFF,
