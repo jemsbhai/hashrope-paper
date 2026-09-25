@@ -83,11 +83,11 @@ across thousands of requests. These are four distinct mechanisms:
 incremental edit, branch and snapshot, prefix-reuse identification, and
 repetition encoding. In deployed systems each mechanism has its own
 specialist. Text ropes handle edits~\cite{boehm1995ropes,ropey}.
-PagedAttention shares KV blocks between branches through ref-counted
+PagedAttention shares KV blocks between branches through
 copy-on-write block tables~\cite{kwon2023pagedattention}. SGLang finds
 reusable prefixes with a radix tree over cached token
 sequences~\cite{zheng2024sglang}. Repetition is handled ad hoc, usually
-by materializing the repeated bytes.
+by materializing the bytes.
 
 This paper makes a unification claim: all four mechanisms are served by
 one structure. \hr{} is a persistent weight-balanced binary
@@ -99,7 +99,7 @@ tree~\cite{merkle1987digital} but over an editable, rebalancing
 structure. Persistence~\cite{driscoll1989persistent} makes forks cheap;
 the balance invariant makes edits logarithmic; and the maintained
 fingerprints make content identity a logarithmic query rather than a
-linear recomputation. The combination is the point. A plain rope edits
+linear recomputation. A plain rope edits
 in $O(\log N)$ but answers ``do these two contexts share a prefix, and
 how long is it'' only by scanning. A radix cache answers the reuse
 question but is not an editable representation of the context itself. A
@@ -124,15 +124,14 @@ through per-mechanism crossovers and a query-rate ablation, so the
 hypothesis is checkable.
 
 We support the claim with three layers of evidence, all pre-registered
-and replicated (three seeds, three process invocations, nine runs per
-point, mean and standard deviation across runs, exact paired sign
-tests):
+and replicated (nine runs per point, exact paired sign tests; protocol
+in Section~\ref{sec:mechanisms}):
 
 \begin{itemize}
 \item \textbf{Mechanism validation} (Section~\ref{sec:mechanisms}).
-Each mechanism is confirmed with a deterministic operation-count guard
-plus wall-clock scaling on real corpus data: exact tokenizer-aligned
-ingestion, linear-time flatten with zero hash recomputation,
+Each mechanism is confirmed by a deterministic operation-count guard
+and wall-clock scaling on real corpus data: exact tokenizer-aligned
+ingestion, linear flatten with zero re-hashing,
 $O(B\log N)$ branching memory, $O(\log^2 N)$ longest-common-prefix
 queries, and $O(\log q)$ repetition encoding.
 \item \textbf{Competitive studies} (Section~\ref{sec:competitive}).
@@ -146,27 +145,27 @@ unification pays.
 \item \textbf{Live serving-stack validation}
 (Section~\ref{sec:realstack}). On vLLM with
 Qwen2.5-7B-Instruct-1M~\cite{yang2025qwen1m} across four A100 GPUs,
-\hr{} identifies shared prefixes exactly and, beyond a crossover length
-that an independent CPU study predicted in advance, faster than the
-production radix matcher, including at a one-million-token length the
-dense engine cannot serve. The same runs measure the GPU energy that
-prefix reuse is worth, attributed honestly to the engine's cache.
+\hr{} identifies shared prefixes exactly and, beyond a crossover the CPU
+study predicted in advance, faster than the production radix matcher,
+including at a one-million-token length the dense engine cannot serve.
+The same runs measure what prefix reuse is worth in GPU energy,
+attributed to the engine's cache.
 \end{itemize}
 
 Two results preview the flavor. First, on edit-plus-identity workloads
 the advantage over the editing specialist grows without bound with
 context size, reaching 369.7x at one million characters and 2901.8x at
 ten million, because the fingerprint is read in $O(1)$ where the
-baseline must recompute it in $O(N)$. The magnitude follows from that
-cost model, since the specialist maintains no fingerprint at all; what
-the experiment measures is the price of maintaining one, a bounded
-constant on raw edits, and the crossover that price buys, which moves
-outward exactly as the cost model predicts when identity queries grow
-rarer. Second, in the stricter test, against a radix matcher built for
-exactly this query, the live-stack crossover falls between 524{,}288
-and 1{,}000{,}000 tokens, and the prediction of an earlier CPU-only model, roughly 571k,
-lands inside that bracket: a pre-registered quantitative prediction
-confirmed on real serving hardware.
+baseline must recompute it in $O(N)$. That magnitude follows from the
+cost model, since the specialist keeps no fingerprint; what the
+experiment measures is the bounded price of maintaining one on raw
+edits and the crossover it buys, which moves outward as predicted when
+identity queries grow rarer. Second, in the stricter test, against a
+radix matcher built for exactly this query, the live-stack crossover
+falls between 524{,}288 and 1{,}000{,}000 tokens, and the earlier
+CPU-only prediction, roughly 571k, lands inside that bracket: a
+pre-registered quantitative prediction confirmed on real serving
+hardware.
 
 % =========================================================================
 \section{The Hashrope Structure}\label{sec:structure}
@@ -208,29 +207,26 @@ nodes, and a fork allocates zero until the branches diverge.
 substring is assembled from stored node hashes without materializing
 bytes: a range decomposes into $O(\log w)$ fully covered subtrees,
 whose stored hashes are combined by the composition rule, plus at most
-two partial leaves. On top of this, the longest common prefix of two
-ropes is found by binary search on prefix hashes, comparing two
-substring fingerprints per step: exactly
-$2\lceil\log_2 N\rceil$ hash comparisons, independent of content, for
-an $O(\log^2 N)$ identity query that never scans the text.
+two partial leaves. The longest common prefix of two ropes is then
+found by binary search on prefix hashes, comparing two substring
+fingerprints per step: exactly $2\lceil\log_2 N\rceil$ hash comparisons,
+independent of content, for an $O(\log^2 N)$ identity query that never
+scans the text.
 
 \textbf{Byte-index contract.} The structure stores, splits, and hashes
 bytes; all indices are byte offsets. Splitting UTF-8 text at an
 arbitrary byte offset is exact over bytes (the halves concatenate back
 to the original and all hashes are over bytes), and character-boundary
-alignment is the caller's concern. The tokenizer-aligned chunker of
-Section~\ref{sec:mechanisms} is such a caller (one boundary predicate
-snaps every leaf boundary to a tokenizer-safe split point, leaving zero
-invalid UTF-8 leaves), and token streams stored as four-byte words
-(Section~\ref{sec:competitive}) are aligned at every multiple of four.
-Python and Rust implementations exist; the CPU studies below use the
-Python implementation except the edit study, which is Rust against
-Rust. Both define the same function, since a fingerprint depends only
-on the bytes and on $(p, x)$, never on tree shape, and both default to
-$p = 2^{61}-1$, $x = 131$ with the same offset; no cross-implementation
-conformance run exists, so agreement is a property of the shared
-definition rather than a measured result (the Rust lazy-construction
-mode holds a sentinel until a hash is materialized).
+alignment is the caller's concern; the tokenizer-aligned chunker of
+Section~\ref{sec:mechanisms} is such a caller, and four-byte token words
+(Section~\ref{sec:competitive}) align at every multiple of four. Python
+and Rust implementations exist; the CPU studies use Python except the
+Rust-against-Rust edit study. Both define the same function, since a
+fingerprint depends only on the bytes and on $(p, x)$, never on tree
+shape, with the same defaults and offset; no cross-implementation
+conformance run exists, so agreement rests on the shared definition,
+not on measurement (Rust's lazy mode holds a sentinel until a hash is
+materialized).
 
 % =========================================================================
 \section{Four Mechanisms, One Structure}\label{sec:mechanisms}
@@ -286,9 +282,9 @@ at 1\,MB to 4\,MB contexts, and
 16-way parallelism reaches 6.62 $\pm$ 0.37 (thread pool) and 7.59
 $\pm$ 0.41 (multiprocessing) on GPT-2 tokenization of 4\,MB inputs,
 with multiprocessing beating threads 9/9 (p = 0.004) at a modest 13 to
-16 percent margin. One honest exception: at 1\,MB with the T5
-tokenizer, threads edge multiprocessing (not significant). Contexts of
-256\,KB and below are overhead-dominated and excluded from claims.
+16 percent margin. One exception: at 1\,MB with the T5 tokenizer,
+threads edge multiprocessing (not significant). Contexts up to
+256\,KB are overhead-dominated and excluded.
 
 \textbf{Flatten in linear time.} Materializing the rope to contiguous
 bytes by in-order leaf traversal performs zero splits, zero leaf
@@ -298,10 +294,9 @@ re-splitting strategy that re-hashes every byte, a roughly flat 730x to
 800x advantage for inputs of 1\,MB and above. Both paths scale
 linearly (log-log slopes 1.034 and 1.044); the eliminated cost is
 redundant re-hashing, not tree depth. Table~\ref{tab:flatten} gives
-the sweep with the guard counts in-line; sizes are deliberately decimal
-rather than powers of two, since power-of-two leaf counts land every
-midpoint on a leaf boundary and would hide the control arm's cost
-entirely.
+the sweep with its guard counts; sizes are decimal rather than powers
+of two, since power-of-two leaf counts land every midpoint on a leaf
+boundary and would hide the control arm's cost.
 
 \begin{table}[t]
 \caption{Flatten sweep, mean over nine runs. The guard column counts
@@ -338,9 +333,9 @@ fifty against 50.2x at one hundred at 2\,M, because both arms are
 linear in branch count, a fact the paged-baseline branch-count
 ablation in Section~\ref{sec:competitive} confirms independently.
 Fork creation takes about 0.037\ms{} independent of $N$,
-against 4 to 17\ms{} for deep copies (114x to 454x). This corrects an
-earlier internal $O(1)$ memory intuition: the honest bound is
-$O(B\log N)$, and it is what the data supports.
+against 4 to 17\ms{} for deep copies (114x to 454x). The bound is
+$O(B\log N)$, correcting an earlier $O(1)$ intuition, and the data
+follow it.
 
 \textbf{Prefix-reuse identification in $O(\log^2 N)$.} The
 binary-search LCP performs exactly $2\lceil\log_2 N\rceil$ hash
@@ -350,26 +345,23 @@ bound with a log-log slope of 0.028 across 64\,KB to 8\,MB, against
 falls near 1\,MB. At 8\,MB the hash LCP completes in 19\ms{} wherever
 the divergence lies, against 99 to 200\ms{} for scanning. Correctness
 is exact: zero mismatches against a byte-level oracle in 162 checks.
-One honest boundary: when two contexts diverge at the very first byte,
+One boundary: when two contexts diverge at the very first byte,
 the scan exits immediately while the binary search still pays its
 logarithmic steps, so trivially disjoint contexts belong to the scan.
 A dedup workload with ten prompts sharing a 1.2\,MB prefix resolves
 all 45 pairs at 20.9\ms{} per pair; in 44 the query returns the
-constructed prefix exactly, and in the one remaining pair it returns a
-longer prefix because the two suffixes happened to continue identically
-past the constructed boundary, which the byte oracle confirms is the
-true answer. Fig.~\ref{fig:lcp} shows the scaling contrast that
-carries the mechanism.
+constructed prefix exactly, and in the other a longer one, because the
+two suffixes continue identically past the constructed boundary, as
+the byte oracle confirms. Fig.~\ref{fig:lcp} shows the scaling
+contrast.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{exp005_lcp_latency}
 \caption{Prefix-identification latency over context size at half-way
 divergence, nine runs per point, log-log. The hash LCP is near flat
-(slope 0.028, the $O(\log^2 N)$ signature; step count exactly
-$2\lceil\log_2 N\rceil$ by guard) while the byte scan is linear
-(slope 1.008); the crossover falls near 1\,MB, where long-context
-serving begins.}
+(the $O(\log^2 N)$ signature) while the byte scan is linear; the
+crossover falls near 1\,MB, where long-context serving begins.}
 \label{fig:lcp}
 \end{figure}
 
@@ -387,11 +379,10 @@ prompts, few-shot exemplars, and template headers are encoded once.
 
 % =========================================================================
 Table~\ref{tab:ledger} aggregates the verification machinery of every
-study in the paper. Each combines an independent correctness oracle, a
-deterministic structural guard, and, wherever exactness is claimed, a
-deliberately injected fault proving the gate can fail. The mismatch
-column is zero everywhere; the controls column is why those zeros mean
-something.
+study: each pairs an independent correctness oracle with a
+deterministic structural guard and, wherever exactness is claimed, an
+injected fault proving the gate can fail. The mismatch column is zero
+everywhere; the controls column is why those zeros mean something.
 
 \begin{table}[t]
 \caption{Verification ledger across all studies. Every oracle
@@ -420,11 +411,10 @@ Live stack & three arms token-identical, 1800 checks & 105/105 corrupted entries
 \section{Against the Specialists}\label{sec:competitive}
 
 Unification is only interesting if the unified structure is competitive
-with the specialist on each specialist's home ground, and clearly
-better once identity enters the workload. We test one deployed
-implementation per mechanism. Setup is never timed; only the operation
-under test is. All comparisons are paired on identical seeded
-workloads.
+with each specialist on its home ground and clearly better once
+identity enters the workload. We test one deployed implementation per
+mechanism; setup is never timed, and all comparisons are paired on
+identical seeded workloads.
 
 \textbf{Edits: against Ropey (Rust against Rust).} Ropey
 1.6.1~\cite{ropey} is a production text rope used by editors. We vendor
@@ -457,14 +447,13 @@ queried, we ablate the query-to-edit ratio $r$
 (Table~\ref{tab:rsweep}). The crossover moves outward exactly as the
 cost model predicts, from 1\,K characters at one query per cycle to
 300\,K at one query per hundred cycles, and below each crossover Ropey
-wins (down to 0.2x at small $N$ under $r = 0.01$), an honest negative
-that delimits the regime. Above the crossover \hr{} wins 9/9 at every
+wins (down to 0.2x at small $N$ under $r = 0.01$), which delimits the
+regime. Above the crossover \hr{} wins 9/9 at every
 size, and even at $r = 0.01$ the advantage reaches 27.7x at 10\,M,
 because Ropey's per-cycle slope stays near one at every ratio (1.013,
-1.007, 0.943) while \hr{}'s stays near 0.2. One more honest cost:
-persistence retains dead path nodes under in-place-style churn, about
-2.7 additional retained nodes per doubling of $N$, the flip side of
-the immutability that makes forks free.
+1.007, 0.943) while \hr{}'s stays near 0.2. One more cost: persistence
+retains dead path nodes under in-place churn, about 2.7 per doubling
+of $N$, the flip side of the immutability that makes forks free.
 
 \begin{table}[t]
 \caption{Query-to-edit ratio ablation against Ropey: per-cycle speedup
@@ -491,8 +480,8 @@ $r$ (queries/cycle) & $N^{*}$ & 100\,K & 1\,M & 10\,M \\
 with the same polynomial hash: per-cycle latency over buffer size, nine
 runs per point. Ropey's cycle is dominated by the $O(N)$ fingerprint
 recompute (slope 1.013); \hr{} reads the maintained fingerprint in
-$O(1)$ (slope 0.150), so the gap widens without bound: 369.7x at 1\,M
-characters, 2901.8x at 10\,M, 9/9 paired at every size.}
+$O(1)$ (slope 0.150), so the gap widens without bound, 9/9 paired at
+every size.}
 \label{fig:editidentity}
 \end{figure}
 
@@ -510,7 +499,7 @@ charges \hr{} its full $O(\log w)$ spine and admits a genuine
 crossover (Table~\ref{tab:branchlat}). On per-token append the specialist wins, 0.33\us{} to
 1.0\us{} amortized $O(1)$ against \hr{}'s 11\us{} to 17\us{}
 $O(\log w)$, an 18x to 35x advantage pre-registered as the bounded
-price of generality and reported in full.
+price of generality.
 
 \begin{table}[t]
 \caption{Branch-creation latency against the paged copy-on-write
@@ -553,7 +542,7 @@ fifty branches of a 1\,M-token context fit in 86\,KB against
 real search: tree-of-thought traces~\cite{yao2023tot} generated by a
 120B open-weight model on Game of 24 (75 trees, 7{,}943 nodes,
 7{,}868 branch creations at beam 5, depth 3), recorded once and
-replayed deterministically through the same harness over prompt
+replayed deterministically through the same driver over prompt
 prefixes up to 256\,K tokens. Every node context reconstructs
 byte-identically in both arms (0 mismatches at every prefix and block
 size), \hr{} branch creation stays flat at 16\us{} to 24\us{} while
@@ -563,23 +552,19 @@ every block size). Marginal branching memory on the real
 five-survivor beams compresses 67x, 34x, and 17x across the
 deployment-standard block sizes 8 to 32, the whole beam fitting in
 about 480\,KB against 4.6\,MB to 32\,MB; at the largest block, 64,
-compression is 9.6x, just under the pre-registered 10x bar, disclosed
-here as the sensitivity tail of the block-size trend rather than
-folded away. The crossover itself is block-dependent and
-characterized rather than universal: block 8 crosses by a 4\,K-token
-prefix, blocks 16 and 32 by 16\,K, block 64 by 64\,K, which tells an
-operator exactly where the tradeoff sits for their configuration.
-Below those crossovers the paged table wins, concretely so on the
-bare puzzles with no prefix at all (a few-token base, 0.30x to
-0.40x): nobody reaches for a persistent content-indexed structure to
-branch a 500-token prompt, and the data says so.
-Table~\ref{tab:mb} spans the whole regime, honest cells included.
+compression is 9.6x, just under the pre-registered 10x bar, the
+sensitivity tail of the block-size trend. The crossover is
+block-dependent: block 8 crosses by a 4\,K-token prefix, blocks 16 and
+32 by 16\,K, block 64 by 64\,K, which tells an operator where the
+tradeoff sits for their configuration. Below those crossovers the
+paged table wins, as on the bare puzzles with no prefix (a few-token
+base, 0.30x to 0.40x); Table~\ref{tab:mb} spans the whole regime.
 
 \begin{table}[t]
 \caption{Ecological replay of real 120B-model tree-of-thought search:
 branch-creation speedup (paged over \hr{}) by prepended prefix length
-$P$, nine runs per point. Sub-crossover cells where the paged table
-wins are in the table, not a footnote.}
+$P$, nine runs per point; sub-crossover cells where the paged table
+wins are included.}
 \label{tab:mb}
 \centering
 \footnotesize
@@ -602,8 +587,7 @@ $P$ (tok) & \hr{} (\textmu s) & paged b16 (\textmu s) & speedup b16 & b8 \\
 \caption{Branch memory against a faithful PagedAttention block-table
 copy-on-write baseline, five branches per context. The paged table is
 $\Theta(N/B)$ per branch; \hr{} adds an $O(\log w)$ shared spine per
-branch, so compression grows with context size (306x at 1\,M tokens at
-the reference block size 16, 613x at block size 8).}
+branch, so compression grows with context size.}
 \label{fig:branchmem}
 \end{figure}
 
@@ -649,27 +633,23 @@ $L$ & radix (ms) & \hr{} (ms) & flat (ms) & speedup \\
 \end{tabular}
 \end{table}
 
-Two honest negatives delimit the regime. On real
+Two negatives delimit the regime. On real
 conversation pairs from ShareGPT~\cite{sharegpt} and
 LMSYS-Chat-1M~\cite{zheng2024lmsyschat}, whose shared prefixes average
 about 2\,K tokens, the radix matcher wins every cell by orders of
 magnitude (0.03\ms{} against 8.8\ms{}), and in a one-against-$K$ sweep
 the radix tree answers all $K$ candidates in one walk while \hr{} pays
 $K$ pairwise queries (610x to the radix side at $K = 100$). The
-pairwise form belongs to the query as posed, not to the structure:
-whether any of $K$ cached contexts shares a length-$\ell$ prefix with
-the query is monotone in $\ell$, and the fingerprint of any
-block-aligned prefix is one substring query, whereas a chained block
-hash~\cite{vllm2025apc} must first compute every earlier block's key.
-An index of each cached context's block-aligned prefix fingerprints
-therefore answers one-against-$K$ to block granularity by a single
-binary search of $O(\log N)$ probes, independent of $K$, at $O(N/b)$
-index entries per context for block size $b$; this is design analysis,
-and the measured negative stands. The radix
-structure also requires the $O(N)$ materialized token sequence per
-cached context, where \hr{} holds the compressed persistent form
-(Section~\ref{sec:mechanisms}); the identification advantage claimed
-here is for long shared prefixes, one pair at a time. The pattern
+pairwise form belongs to the query, not the structure: whether any of
+$K$ cached contexts shares a length-$\ell$ prefix with the query is
+monotone in $\ell$, and any block-aligned prefix fingerprint is one
+substring query (a chained block hash~\cite{vllm2025apc} must first
+compute every earlier key), so an index of block-aligned prefix
+fingerprints answers one-against-$K$ by one binary search of
+$O(\log N)$ probes, independent of $K$, at $O(N/b)$ entries per
+context for block size $b$. This is design analysis; the measured
+negative stands. The identification advantage claimed here is for
+long shared prefixes, one pair at a time. The pattern
 across all three studies is the thesis in miniature: each specialist
 buys its per-operation constant by giving something up elsewhere (the
 flat scan's cheap query costs $O(N)$ edits, the radix tree's cheap
@@ -681,12 +661,11 @@ mechanisms simultaneously.
 % =========================================================================
 \section{Validation on a Live 7B Serving Stack}\label{sec:realstack}
 
-The CPU studies leave one question open: does any of this survive
-contact with a real serving engine, at lengths that matter, with
-correctness verified end to end and energy measured rather than
-asserted? We answer it on vLLM 0.8.5.post1 serving
-Qwen2.5-7B-Instruct-1M~\cite{yang2025qwen1m} with tensor parallelism
-across four A100-40GB GPUs.
+The CPU studies leave open whether any of this survives a real serving
+engine at lengths that matter, with correctness verified end to end and
+energy measured rather than asserted. We answer on vLLM 0.8.5.post1
+serving Qwen2.5-7B-Instruct-1M~\cite{yang2025qwen1m} with tensor
+parallelism across four A100-40GB GPUs.
 
 \textbf{Design.} Two decoupled tracks share every run. Track A varies
 exactly one engine knob, the prefix cache (off, on), and measures GPU
@@ -697,10 +676,10 @@ cache axis, so the cache flag is the only difference in dispatched
 work. Track B runs the three identification arms (\hr{}, the
 vendored radix matcher, the flat scan) on CPU, strictly outside the GPU
 measurement window, over the same token streams the engine serves, so
-the identity layer can never contaminate the energy measurement: with
-one engine execution per cell, the difference in dispatched GPU work
-between identifier arms is identically zero, and identity-layer energy
-neutrality holds by construction. Two regimes: realistic multi-turn
+the identity layer never touches the energy measurement: with one
+engine execution per cell, the identifier arms differ by exactly zero
+dispatched GPU work, and energy neutrality holds by construction. Two
+regimes: realistic multi-turn
 streams drawn from ShareGPT and LMSYS-Chat-1M (median shared prefixes
 near 642 tokens), and a controlled sweep of a single shared prefix of
 length $L$ in $\{$131{,}072; 262{,}144; 393{,}216; 524{,}288;
@@ -726,8 +705,7 @@ reuse is carried by the time-to-first-token and energy deltas together
 with the correctness gate, not by a counter. And energy per token
 divides total GPU Joules by generated completion tokens, so absolute
 values are prefill-dominated; the cache-off over cache-on ratio and
-the paired delta are the meaningful quantities, and they are what we
-report.
+the paired delta are the quantities we report.
 
 \textbf{The crossover, confirmed on live hardware.} The CPU study of
 Section~\ref{sec:competitive} predicted a crossover near 571\,K tokens
@@ -739,9 +717,9 @@ $L = 1{,}000{,}000$ (44.42 $\pm$ 0.63\ms{} against 53.19 $\pm$
 live-stack crossover inside the predicted region
 (Fig.~\ref{fig:crossover}). \hr{}'s latency is flat across the entire
 sweep, the logarithmic signature, while the radix walk grows linearly.
-The one-million-token point deserves emphasis: at that length the
-dense-attention engine cannot complete a prefill at all in this
-configuration: it initializes cleanly and allocates KV cache for 1.39x
+At one million tokens the dense-attention engine cannot complete a
+prefill in this configuration: it initializes cleanly and allocates KV
+cache for 1.39x
 the full request across the four GPUs, but the first dense $O(L^2)$
 prefill step never returns within the engine's execution window (the
 runs record the wall explicitly and skip the engine track there), yet the identity layer keeps answering in
@@ -753,18 +731,14 @@ engine configuration; the identification does not share it.
 \centering
 \includegraphics[width=\columnwidth]{exp015_identification_latency_vs_L}
 \caption{Identification latency on the live stack over shared-prefix
-length, log-log, nine runs per point. \hr{} is flat across the sweep
-(the $O(\log)$ signature), the production radix matcher grows, and the
-flat $O(L)$ scan has slope near one. The live-stack crossover $L^{*\prime}$
+length, log-log, nine runs per point. The live-stack crossover $L^{*\prime}$
 is bracketed between 524{,}288 and 1{,}000{,}000 tokens; the dashed line
 is the crossover predicted in advance by the CPU-only study, which
-lands inside the bracket. At one million tokens, a length the dense
-engine cannot prefill, \hr{} beats the radix matcher 1.20x, 9/9
-paired, p = 0.002.}
+lands inside the bracket.}
 \label{fig:crossover}
 \end{figure}
 
-\textbf{What reuse is worth, attributed honestly.} With the cache on,
+\textbf{What reuse is worth.} With the cache on,
 the engine's own prefix caching reduces GPU energy per generated token
 by 22.65x $\pm$ 1.84 on the realistic streams and by 69.6x, 150.4x,
 217.6x, and 277.6x at $L$ from 131\,K to 524\,K on the controlled
@@ -790,8 +764,7 @@ $L{=}393\,K$ & 10901 & 50.1 & 217.6x & 54.6\,s $\to$ 0.67\,s \\
 $L{=}524\,K$ & 18131 & 65.3 & 277.6x & 92.5\,s $\to$ 0.87\,s \\
 \bottomrule
 \end{tabular}
-\end{table} One
-sentence of attribution matters more than any of these numbers: the
+\end{table} The
 reduction is the effect of the engine's cache, not of \hr{}. What
 \hr{} contributes is the verified identification that decides reuse,
 at exactly zero additional GPU work and at millisecond latencies that
@@ -803,21 +776,17 @@ identification is worth in the settings where the engine's matcher does
 not reach: routing across engine instances, cross-request
 deduplication, and contexts held as opaque compressed blobs.
 
-\textbf{What integration would take.} Replacing an engine's matcher is
-confined to one hook, the function that turns a request into prefix
-keys: SGLang walks its radix tree token by token, and vLLM hashes each
-full block together with its parent's key~\cite{vllm2025apc}. Keying
-blocks by \hr{} prefix fingerprints instead lets a maintained context
-supply the key of any block-aligned prefix as one substring query
-without touching tokens, while the engine keeps allocation, reference
-counting, and eviction. Inside one engine this removes matching work
-that is already a rounding error against prefill, so the integration
-that pays sits one layer up: a router or deduplicator that keeps one
-fingerprint index across engine instances and asks which of them
-already holds a prefix. Insertion on cache admission, coherence with
-the engine's eviction, and end-to-end request latency are not measured
-here; the serving-loop replay of Section~\ref{sec:conclusion} would
-measure them.
+\textbf{What integration would take.} Replacing an engine's matcher
+touches one hook, the function that turns a request into prefix keys:
+SGLang walks its radix tree token by token, and vLLM hashes each full
+block with its parent's key~\cite{vllm2025apc}. Keyed by \hr{} prefix
+fingerprints, a maintained context supplies any block-aligned key as
+one substring query, while the engine keeps allocation, reference
+counting, and eviction. Inside one engine that saves matching work
+already negligible against prefill, so the integration that pays sits
+one layer up, in a router or deduplicator holding one fingerprint index
+across instances. Admission cost, eviction coherence, and end-to-end
+latency are not measured here (Section~\ref{sec:conclusion}).
 
 \begin{figure}[t]
 \centering
@@ -825,8 +794,7 @@ measure them.
 \caption{The engine prefix-cache effect on the live stack (top: GPU
 energy per generated token, cache off over cache on; bottom: time to
 first token), nine runs per point. The reduction, 69.6x to 277.6x
-across the sweep, is attributed to the vLLM cache, not to \hr{}; the
-identity layer adds exactly zero GPU work by construction. The shaded
+across the sweep, is attributed to the vLLM cache, not to \hr{}. The shaded
 region marks the dense-attention serving wall, beyond which the engine
 cannot prefill; identification (Fig.~\ref{fig:crossover}) keeps
 working there.}
@@ -836,50 +804,37 @@ working there.}
 % =========================================================================
 \section{Limitations and Disclosures}\label{sec:limits}
 
-Five limits bound the claims. First, the polynomial fingerprint uses
-public parameters, so an adversary who controls content can forge
-collisions; identity here is an integrity check against accidental
-divergence, not an adversarial guarantee, the same caveat the vLLM
-design documentation states for its own hash-keyed prefix
-cache~\cite{vllm2025apc}. The mitigations buy different guarantees, and
-both implementations already take the base as a parameter. A secret
-base drawn uniformly from $[2, p-1]$ keeps the probability that two
-distinct strings of length at most $n$ collide below $n/p$, because
-their fingerprint difference is a nonzero polynomial in $x$ of degree
-below $n$ (the $+1$ offset keeps it nonzero across lengths): about
-$1.7 \times 10^{-12}$ per comparison at four million bytes (one million
-tokens as four-byte words), with every composition rule and bound
-unchanged. The bound holds only for content chosen independently of the
-key and while fingerprints stay private, since the fingerprint of any
-known two-byte string is linear in $x$ and reveals it. A wider or
-second modulus (the Python implementation already accepts
-$p = 2^{127}-1$) lowers the accidental rate but adds no adversarial
-guarantee while parameters are public. Verify-on-match is exact against
-any adversary: fingerprint equality has no false negatives, so a
-collision can only lengthen the prefix the binary search returns, and a
-byte comparison of that prefix before reuse, linear in its length,
-certifies it. Second, the identity layer is conditional on use: inside
-a single engine that already prefix-matches its own cache it is
-redundant, and the short-prefix and one-against-many regimes belong to
-the radix matcher (Section~\ref{sec:competitive}); the value
-concentrates on long shared prefixes and on settings outside a single
-engine's cache. Third, absolute multipliers from the Python CPU studies
-carry an interpreter constant; the transferable content there is the
-deterministic operation counts and the measured scaling exponents, and
-the Rust edit study gives direct numbers. Fourth, the one-million-token
-serving wall is a property of the dense-attention engine configuration
-we measured, not of the structure, and generation quality at extreme
-lengths was not scored; the engine-side claims are timing and energy
-only. Fifth, the real traces replayed here are tree-of-thought search
-from a 120B model and ShareGPT and LMSYS-Chat-1M conversation streams,
-not recorded agent sessions; the per-mechanism crossovers and the
-query-rate ablation are the yardstick a trace-driven agent replay would
-be read against (Section~\ref{sec:conclusion}). Cross-implementation
-hash agreement rests on the shared definition
-(Section~\ref{sec:structure}), not on a conformance run, and a per-seed
-provenance gap in two of the three synthetic base contexts is
-documented in the project record (the recorded corpus hashes are
-authoritative; results are unaffected).
+Five limits bound the claims. First, the fingerprint uses public
+parameters, so an adversary who controls content can forge collisions;
+identity here is an integrity check against accidental divergence, the
+caveat vLLM's documentation also states for its hash-keyed
+cache~\cite{vllm2025apc}. Both implementations take the base as a
+parameter, and the mitigations buy different guarantees. A secret base
+drawn uniformly from $[2, p-1]$ keeps the collision probability of two
+distinct strings of length at most $n$ below $n/p$, since their
+fingerprint difference is a nonzero polynomial in $x$ of degree below
+$n$ (the $+1$ offset keeps it nonzero across lengths): about
+$1.7 \times 10^{-12}$ per comparison at four million bytes, with every
+rule and bound unchanged, but only for content chosen independently of
+the key and fingerprints kept private, since the fingerprint of a known
+two-byte string reveals $x$. A wider or second modulus (the Python
+implementation accepts $p = 2^{127}-1$) lowers only the accidental
+rate. Verify-on-match is exact against any adversary: equality has no
+false negatives, so a collision can only lengthen the returned prefix,
+and a byte comparison of that prefix before reuse, linear in its
+length, certifies it. Second, the identity layer is conditional on use
+(Sections~\ref{sec:competitive} and~\ref{sec:realstack}): the
+short-prefix and one-against-many regimes belong to the radix matcher,
+and the value concentrates on long shared prefixes and settings outside
+a single engine's cache. Third, Python multipliers carry an interpreter
+constant (Section~\ref{sec:mechanisms}). Fourth, the serving wall belongs to
+the engine configuration (Section~\ref{sec:realstack}), and generation
+quality at extreme lengths was not scored; the engine-side claims are
+timing and energy only. Fifth, the real traces replayed here are tree-of-thought search
+and ShareGPT and LMSYS-Chat-1M streams, not recorded agent sessions
+(Section~\ref{sec:conclusion}). A per-seed provenance gap in two of the
+three synthetic base contexts is documented in the project record
+(recorded corpus hashes are authoritative; results are unaffected).
 
 % =========================================================================
 \section{Related Work}\label{sec:related}
@@ -904,28 +859,22 @@ Cache~\cite{gim2024promptcache} reuses attention states of declared
 prompt modules. These systems reuse KV state given a match; \hr{}
 addresses the representation question underneath them: one persistent
 object that is simultaneously the editable context, the forkable
-snapshot, and a verifiable content key. Tree-of-thought
-search~\cite{yao2023tot} supplies the branching workload, and
-ShareGPT~\cite{sharegpt} with LMSYS-Chat-1M~\cite{zheng2024lmsyschat}
-the realistic conversation streams.
+snapshot, and a verifiable content key.
 
 % =========================================================================
 \section{Conclusion}\label{sec:conclusion}
 
-Four mechanisms of LLM context management, incremental edit, branch
-and snapshot, prefix-reuse identification, and repetition encoding,
-reduce to one persistent weight-balanced rope with per-node polynomial
-fingerprints. The structure edits and answers verified identity
-queries in logarithmic time at once, holds its own against a deployed
-specialist on each mechanism's home ground, dominates once identity
-enters the workload, and, on a live 7B serving stack, identifies a
-one-million-token shared prefix exactly and faster than the production
-matcher at a length the dense engine cannot serve, while the measured
-engine-side energy quantifies what such reuse is worth.
+Four mechanisms of LLM context management reduce to one persistent
+weight-balanced rope with per-node polynomial fingerprints. The
+structure edits and answers verified identity queries in logarithmic
+time at once, holds its own against each specialist on its home ground,
+dominates once identity enters the workload, and on a live 7B stack
+identifies a one-million-token shared prefix exactly and faster than
+the production matcher, at a length the dense engine cannot serve,
+while measured engine energy prices what such reuse is worth.
 
-The applications reach past a single serving engine, because the
-structure is domain-agnostic over bytes and the crossovers say exactly
-where it pays. A fingerprint that is maintained rather than recomputed
+The applications reach past a single engine, because the structure is
+domain-agnostic over bytes and the crossovers say where it pays. A fingerprint that is maintained rather than recomputed
 travels: it can route requests across engine instances, deduplicate
 across requests and tenants, and survive cache eviction, none of which
 a per-instance radix tree provides. The same edit-plus-identity regime
@@ -934,14 +883,12 @@ document stores and collaborative editors (branch and snapshot plus
 repetition encoding give logarithmic-memory histories), in
 storage-layer deduplication keyed by maintained fingerprints instead
 of rescans, and in multi-megabyte sequence data such as genomic
-strings, whose lengths sit squarely beyond every crossover measured
-here. In each case the query-rate ablation gives the honest
+strings, whose lengths sit beyond every crossover measured here. In each case the query-rate ablation gives the
 precondition: the win scales with how often the surrounding system
 asks whether content is identical.
 
-Future work follows the same discipline as the results. Keyed or
-verify-on-match hashing closes the adversarial gap the fingerprint
-leaves open. A recorded-agent-trace study would replay real sessions
+Keyed or verify-on-match hashing would close the adversarial gap the
+fingerprint leaves open. A recorded-agent-trace study would replay real sessions
 to measure where deployed operation mixes, context sizes, and
 identity-query rates sit against the crossovers, upgrading the
 motivating hypothesis of Section~\ref{sec:intro} to a tested claim. A
