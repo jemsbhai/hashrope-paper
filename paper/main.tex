@@ -157,9 +157,14 @@ Two results preview the flavor. First, on edit-plus-identity workloads
 the advantage over the editing specialist grows without bound with
 context size, reaching 369.7x at one million characters and 2901.8x at
 ten million, because the fingerprint is read in $O(1)$ where the
-baseline must recompute it in $O(N)$. Second, the live-stack crossover
-against the radix matcher falls between 524{,}288 and 1{,}000{,}000
-tokens, and the prediction of an earlier CPU-only model, roughly 571k,
+baseline must recompute it in $O(N)$. The magnitude follows from that
+cost model, since the specialist maintains no fingerprint at all; what
+the experiment measures is the price of maintaining one, a bounded
+constant on raw edits, and the crossover that price buys, which moves
+outward exactly as the cost model predicts when identity queries grow
+rarer. Second, in the stricter test, against a radix matcher built for
+exactly this query, the live-stack crossover falls between 524{,}288
+and 1{,}000{,}000 tokens, and the prediction of an earlier CPU-only model, roughly 571k,
 lands inside that bracket: a pre-registered quantitative prediction
 confirmed on real serving hardware.
 
@@ -213,10 +218,19 @@ an $O(\log^2 N)$ identity query that never scans the text.
 bytes; all indices are byte offsets. Splitting UTF-8 text at an
 arbitrary byte offset is exact over bytes (the halves concatenate back
 to the original and all hashes are over bytes), and character-boundary
-alignment is the caller's concern. Python and Rust implementations
-exist; the CPU studies below use the Python implementation except the
-edit study, which is Rust against Rust. We do not claim cross-language
-hash byte-identity in this paper.
+alignment is the caller's concern. The tokenizer-aligned chunker of
+Section~\ref{sec:mechanisms} is such a caller (one boundary predicate
+snaps every leaf boundary to a tokenizer-safe split point, leaving zero
+invalid UTF-8 leaves), and token streams stored as four-byte words
+(Section~\ref{sec:competitive}) are aligned at every multiple of four.
+Python and Rust implementations exist; the CPU studies below use the
+Python implementation except the edit study, which is Rust against
+Rust. Both define the same function, since a fingerprint depends only
+on the bytes and on $(p, x)$, never on tree shape, and both default to
+$p = 2^{61}-1$, $x = 131$ with the same offset; no cross-implementation
+conformance run exists, so agreement is a property of the shared
+definition rather than a measured result (the Rust lazy-construction
+mode holds a sentinel until a hash is materialized).
 
 % =========================================================================
 \section{Four Mechanisms, One Structure}\label{sec:mechanisms}
@@ -641,7 +655,17 @@ LMSYS-Chat-1M~\cite{zheng2024lmsyschat}, whose shared prefixes average
 about 2\,K tokens, the radix matcher wins every cell by orders of
 magnitude (0.03\ms{} against 8.8\ms{}), and in a one-against-$K$ sweep
 the radix tree answers all $K$ candidates in one walk while \hr{} pays
-$K$ pairwise queries (610x to the radix side at $K = 100$). The radix
+$K$ pairwise queries (610x to the radix side at $K = 100$). The
+pairwise form belongs to the query as posed, not to the structure:
+whether any of $K$ cached contexts shares a length-$\ell$ prefix with
+the query is monotone in $\ell$, and the fingerprint of any
+block-aligned prefix is one substring query, whereas a chained block
+hash~\cite{vllm2025apc} must first compute every earlier block's key.
+An index of each cached context's block-aligned prefix fingerprints
+therefore answers one-against-$K$ to block granularity by a single
+binary search of $O(\log N)$ probes, independent of $K$, at $O(N/b)$
+index entries per context for block size $b$; this is design analysis,
+and the measured negative stands. The radix
 structure also requires the $O(N)$ materialized token sequence per
 cached context, where \hr{} holds the compressed persistent form
 (Section~\ref{sec:mechanisms}); the identification advantage claimed
@@ -731,8 +755,8 @@ engine configuration; the identification does not share it.
 \caption{Identification latency on the live stack over shared-prefix
 length, log-log, nine runs per point. \hr{} is flat across the sweep
 (the $O(\log)$ signature), the production radix matcher grows, and the
-flat $O(L)$ scan has slope near one. The live-stack crossover is
-bracketed between 524{,}288 and 1{,}000{,}000 tokens; the dashed line
+flat $O(L)$ scan has slope near one. The live-stack crossover $L^{*\prime}$
+is bracketed between 524{,}288 and 1{,}000{,}000 tokens; the dashed line
 is the crossover predicted in advance by the CPU-only study, which
 lands inside the bracket. At one million tokens, a length the dense
 engine cannot prefill, \hr{} beats the radix matcher 1.20x, 9/9
@@ -772,11 +796,28 @@ reduction is the effect of the engine's cache, not of \hr{}. What
 \hr{} contributes is the verified identification that decides reuse,
 at exactly zero additional GPU work and at millisecond latencies that
 are a rounding error against prefill. An upstream identity layer is
-redundant inside a single engine that already radix-matches its own
-cache; the measured stakes say what verified identification is worth
-in the settings where the engine's matcher does not reach: routing
-across engine instances, cross-request deduplication, and contexts
-held as opaque compressed blobs.
+redundant inside a single engine that already prefix-matches its own
+cache (a radix tree in SGLang, chained block hashes in
+vLLM~\cite{vllm2025apc}); the measured stakes say what verified
+identification is worth in the settings where the engine's matcher does
+not reach: routing across engine instances, cross-request
+deduplication, and contexts held as opaque compressed blobs.
+
+\textbf{What integration would take.} Replacing an engine's matcher is
+confined to one hook, the function that turns a request into prefix
+keys: SGLang walks its radix tree token by token, and vLLM hashes each
+full block together with its parent's key~\cite{vllm2025apc}. Keying
+blocks by \hr{} prefix fingerprints instead lets a maintained context
+supply the key of any block-aligned prefix as one substring query
+without touching tokens, while the engine keeps allocation, reference
+counting, and eviction. Inside one engine this removes matching work
+that is already a rounding error against prefill, so the integration
+that pays sits one layer up: a router or deduplicator that keeps one
+fingerprint index across engine instances and asks which of them
+already holds a prefix. Insertion on cache admission, coherence with
+the engine's eviction, and end-to-end request latency are not measured
+here; the serving-loop replay of Section~\ref{sec:conclusion} would
+measure them.
 
 \begin{figure}[t]
 \centering
@@ -795,15 +836,32 @@ working there.}
 % =========================================================================
 \section{Limitations and Disclosures}\label{sec:limits}
 
-Four limits bound the claims. First, the polynomial fingerprint uses
+Five limits bound the claims. First, the polynomial fingerprint uses
 public parameters, so an adversary who controls content can forge
 collisions; identity here is an integrity check against accidental
-divergence, not an adversarial guarantee. Keyed hashing or
-verify-on-match (compare bytes only when fingerprints agree) closes the
-gap and is future work. Second, the identity layer is conditional on
-use: inside a single engine that already maintains its own radix cache
-it is redundant, and the short-prefix and one-against-many regimes
-belong to the radix matcher (Section~\ref{sec:competitive}); the value
+divergence, not an adversarial guarantee, the same caveat the vLLM
+design documentation states for its own hash-keyed prefix
+cache~\cite{vllm2025apc}. The mitigations buy different guarantees, and
+both implementations already take the base as a parameter. A secret
+base drawn uniformly from $[2, p-1]$ keeps the probability that two
+distinct strings of length at most $n$ collide below $n/p$, because
+their fingerprint difference is a nonzero polynomial in $x$ of degree
+below $n$ (the $+1$ offset keeps it nonzero across lengths): about
+$1.7 \times 10^{-12}$ per comparison at four million bytes (one million
+tokens as four-byte words), with every composition rule and bound
+unchanged. The bound holds only for content chosen independently of the
+key and while fingerprints stay private, since the fingerprint of any
+known two-byte string is linear in $x$ and reveals it. A wider or
+second modulus (the Python implementation already accepts
+$p = 2^{127}-1$) lowers the accidental rate but adds no adversarial
+guarantee while parameters are public. Verify-on-match is exact against
+any adversary: fingerprint equality has no false negatives, so a
+collision can only lengthen the prefix the binary search returns, and a
+byte comparison of that prefix before reuse, linear in its length,
+certifies it. Second, the identity layer is conditional on use: inside
+a single engine that already prefix-matches its own cache it is
+redundant, and the short-prefix and one-against-many regimes belong to
+the radix matcher (Section~\ref{sec:competitive}); the value
 concentrates on long shared prefixes and on settings outside a single
 engine's cache. Third, absolute multipliers from the Python CPU studies
 carry an interpreter constant; the transferable content there is the
@@ -812,10 +870,16 @@ the Rust edit study gives direct numbers. Fourth, the one-million-token
 serving wall is a property of the dense-attention engine configuration
 we measured, not of the structure, and generation quality at extreme
 lengths was not scored; the engine-side claims are timing and energy
-only. We also do not claim byte-identical hashes across the Python and
-Rust implementations, and a per-seed provenance gap in two of the three
-synthetic base contexts is documented in the project record (the
-recorded corpus hashes are authoritative; results are unaffected).
+only. Fifth, the real traces replayed here are tree-of-thought search
+from a 120B model and ShareGPT and LMSYS-Chat-1M conversation streams,
+not recorded agent sessions; the per-mechanism crossovers and the
+query-rate ablation are the yardstick a trace-driven agent replay would
+be read against (Section~\ref{sec:conclusion}). Cross-implementation
+hash agreement rests on the shared definition
+(Section~\ref{sec:structure}), not on a conformance run, and a per-seed
+provenance gap in two of the three synthetic base contexts is
+documented in the project record (the recorded corpus hashes are
+authoritative; results are unaffected).
 
 % =========================================================================
 \section{Related Work}\label{sec:related}
