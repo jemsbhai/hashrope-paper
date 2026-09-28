@@ -1,11 +1,9 @@
-# Hashrope (IEEE ICTAI submission)
+# Hashrope: A Persistent Data Structure for Mechanisms of LLM Context Management
 
-Working title: *Sub-Linear Context Routing and Dynamic State Management for
-Agentic LLMs via Hash-Augmented Ropes* (title under revision).
+**Authors:** Muntaser Syed, Ameerah Alsulami, and Marius Silaghi.
 
-**Target venue:** IEEE ICTAI. **Goal:** best-paper-quality submission — every
-claim traceable to a logged, reproducible experiment; a runnable artifact;
-honest baselines and uncertainty throughout.
+**Status:** Accepted full paper, IEEE ICTAI 2026. The camera-ready manuscript
+source is in [paper/main.tex](paper/main.tex).
 
 This paper builds on the `hashrope` library (PyPI + crates.io), a BB[2/7]
 weight-balanced rope with polynomial-hash metadata over Mersenne primes,
@@ -36,10 +34,14 @@ old/                 # Prior-generation draft, notebooks, CSV suites, generated 
 
 ## Status
 
-Workspace scaffolded 2026-06-10. The prior draft in `old/` was audited
-(2026-06-09); see `CLAIMS.md` for which claims survived, were reframed, or were
-retracted. Active work proceeds one repair at a time; current focus is
-**repair #2: tokenizer-aligned ingestion** (claim S1).
+The camera-ready manuscript uses the accepted title above. This public
+repository contains the manuscript source, experiment code, results, and figures;
+the reusable library is maintained separately in
+[jemsbhai/hashrope](https://github.com/jemsbhai/hashrope).
+
+The workspace was scaffolded on June 10, 2026, after an audit of the prior draft
+in `old/`. See `CLAIMS.md` and `LOGBOOK.md` for the claim history, experiment
+records, and revisions.
 
 ## Reproduction
 
